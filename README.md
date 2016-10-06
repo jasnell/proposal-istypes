@@ -210,10 +210,10 @@ Returns `true` if `arg` is an instance of `WeakSet`.
 
 Returns `true` if `arg` is an instance of `Intl.Collator`.
 
-### `Intl.DateTimeFormat(arg)`
+### `Intl.DateTimeFormat.isDateTimeFormat(arg)`
 
 Returns `true` if `arg` is an instance of `Intl.DateTimeFormat`.
 
-### `Intl.NumberFormat(arg)`
+### `Intl.NumberFormat.isNumberFormat(arg)`
 
 Returns `true` if `arg` is an instance of `Intl.NumberFormat`.
