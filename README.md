@@ -80,46 +80,46 @@ Returns `true` if `arg` is an instance of a `Map` iterator.
 
 ### `Number.isNumber(arg)`
 
-Returns `true` if `arg` is either an instance of `Number` of a number primitive.
+Returns `true` if `arg` is either an instance of `Number` or a number primitive.
 
 ### `Number.isInt8(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is an 8-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is an 8-bit
 signed integer in the range `-2^7 <= arg <= -2^7-1`.
 
 ### `Number.isInt16(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 16-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 16-bit
 signed integer in the range `-2^15 <= arg <= -2^15-1`.
 
 ### `Number.isInt32(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 32-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
 signed integer in the range `-2^31 <= arg <= -2^31-1.
 
 ### `Number.isInt64(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 64-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 64-bit
 signed integer in the range `-2^63 <= arg <= -2^63-1`.
 
 ### `Number.isUint8(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is an 8-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is an 8-bit
 unsigned integer in the range `0 <= arg <= 2^8 − 1`.
 
 ### `Number.isUint16(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 16-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 16-bit
 unsigned integer in the range `0 <= arg <= 2^16 − 1`.
 
 ### `Number.isUint32(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 32-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
 unsigned integer in the range `0 <= arg <= 2^32 − 1`.
 
 ### `Number.isUint64(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and if `arg` is a 64-bit
+Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 64-bit
 unsigned integer in the range `0 <= arg <= 2^64 − 1`.
 
 ### `Object.isObject(arg)`
@@ -198,9 +198,9 @@ Returns `true` if `arg` is an instance of `Float32Array`.
 
 Returns `true` if `arg` is an instance of `Float64Array`.
 
-### `WeakMap.isWeapMap(arg)`
+### `WeakMap.isWeakMap(arg)`
 
-Returns `true` if `arg` is an instance of `WeapMap`.
+Returns `true` if `arg` is an instance of `WeakMap`.
 
 ### `WeakSet.isWeakSet(arg)`
 
