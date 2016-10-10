@@ -105,7 +105,7 @@ signed integer in the range `-2^15 <= arg <= -2^15-1`.
 ### `Number.isInt32(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
-signed integer in the range `-2^31 <= arg <= -2^31-1.
+signed integer in the range `-2^31 <= arg <= -2^31-1`.
 
 ### `Number.isInt64(arg)`
 
