@@ -76,10 +76,6 @@ Returns `true` if `arg` is an instance of `Function`.
 
 Returns `true` if `arg` is a Generator Function.
 
-### `Function.isGeneratorObject(arg)`
-
-Returns `true` if `arg` is a Generator Object.
-
 ### `Map.isMap(arg)`
 
 Returns `true` if `arg` is an instance of `Map`.
@@ -107,11 +103,6 @@ signed integer in the range `-2^15 <= arg <= -2^15-1`.
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
 signed integer in the range `-2^31 <= arg <= -2^31-1`.
 
-### `Number.isInt64(arg)`
-
-Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 64-bit
-signed integer in the range `-2^63 <= arg <= -2^63-1`.
-
 ### `Number.isUint8(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is an 8-bit
@@ -127,10 +118,9 @@ unsigned integer in the range `0 <= arg <= 2^16 − 1`.
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
 unsigned integer in the range `0 <= arg <= 2^32 − 1`.
 
-### `Number.isUint64(arg)`
+### `Object.isGeneratorObject(arg)`
 
-Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 64-bit
-unsigned integer in the range `0 <= arg <= 2^64 − 1`.
+Returns `true` if `arg` is a Generator Object.
 
 ### `Object.isObject(arg)`
 
@@ -176,39 +166,43 @@ Returns `true` if `arg` is a `Symbol`.
 
 Returns `true` if `arg` is an instance of a Typed Array.
 
-### `[TypedArray].isInt8Array(arg)`
+*Note*: The `isTypedArray(arg)` method would appear on all `TypedArray`
+sub-types. For instance, `Int8Array.isTypedArray(arg)`,
+`Uint16Array.isTypedArray(arg)`, etc.
+
+### `Int8Array.isInt8Array(arg)`
 
 Returns `true` if `arg` is an instance of `Int8Array`.
 
-### `[TypedArray].isInt16Array(arg)`
+### `Int16Array.isInt16Array(arg)`
 
 Returns `true` if `arg` is an instance of `Int16Array`.
 
-### `[TypedArray].isInt32Array(arg)`
+### `Int32Array.isInt32Array(arg)`
 
 Returns `true` if `arg` is an instance of `Int32Array`.
 
-### `[TypedArray].isUint8Array(arg)`
+### `Uint8Array.isUint8Array(arg)`
 
 Returns `true` if `arg` is an instance of `Uint8Array`.
 
-### `[TypedArray].isUint8ClampedArray(arg)`
+### `Uint8ClampedArray.isUint8ClampedArray(arg)`
 
 Returns `true` if `arg` is an instance of `UintClamped8Array`.
 
-### `[TypedArray].isUint16Array(arg)`
+### `Uint16Array.isUint16Array(arg)`
 
 Returns `true` if `arg` is an instance of `UInt16Array`.
 
-### `[TypedArray].isUint32Array(arg)`
+### `Uint32Array.isUint32Array(arg)`
 
 Returns `true` if `arg` is an instance of `Uint32Array`.
 
-### `[TypedArray].isFloat32Array(arg)`
+### `Float32Array.isFloat32Array(arg)`
 
 Returns `true` if `arg` is an instance of `Float32Array`.
 
-### `[TypedArray].isFloat64Array(arg)`
+### `Float64Array.isFloat64Array(arg)`
 
 Returns `true` if `arg` is an instance of `Float64Array`.
 
@@ -219,6 +213,8 @@ Returns `true` if `arg` is an instance of `WeakMap`.
 ### `WeakSet.isWeakSet(arg)`
 
 Returns `true` if `arg` is an instance of `WeakSet`.
+
+## ECMA-402 `Intl` additions
 
 ### `Intl.Collator.isCollator(arg)`
 
