@@ -26,6 +26,16 @@ This proposal introduces a number of additional `is{Type}` methods that are
 similar to the existing `Array.isArray()` function. These allow for reliable
 `instanceof` type checking.
 
+Node.js uses such checks, in part, in order to reliably determine a values
+type for debugging, inspection and display formatting purposes in the
+`util.format()` and `util.inspect()` APIs. In addition, the `is` package on
+npm (which implements similar type checks) currently has roughly 33k+ downloads
+per day.
+
+Node.js can (and has) implement these functions in a host-specific manner as
+part of the Node.js API but the preference would be towards having these kind
+of type checks be a regular part of the language API.
+
 ## Example
 
 ```js
@@ -132,7 +142,11 @@ Returns `true` if `arg` is an instance of `Promise`.
 
 ### `Proxy.isProxy(arg)`
 
-Returns `true` if `arg` is a Proxy object.
+Returns `true` if `arg` is a `Proxy` object.
+
+*Note*: While noting the fact that `Proxy` objects are intended to be
+transparent, there are certain debugging and inspection use cases where a
+developer needs to know if they are working with a `Proxy` object.
 
 ### `RegExp.isRegExp(arg)`
 
