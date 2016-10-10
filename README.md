@@ -160,7 +160,7 @@ Returns `true` if `arg` is an instance of `Set`.
 
 Returns `true` if `arg` is an instance of a `Set` iterator.
 
-### `Set.isSharedArrayBuffer(arg)`
+### `SharedArrayBuffer.isSharedArrayBuffer(arg)`
 
 Returns `true` if `arg` is an instance of `SharedArrayBuffer`.
 
