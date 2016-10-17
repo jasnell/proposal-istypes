@@ -158,6 +158,10 @@ Returns `true` if `arg` is an instance of `SharedArrayBuffer`.
 
 Returns `true` if `arg` is either a `String` object or a string primitive.
 
+### `String.isStringIterator(arg)`
+
+Returns `true` if `arg` is a `String` iterator.
+
 ### `Symbol.isSymbol(arg)`
 
 Returns `true` if `arg` is a `Symbol`.
