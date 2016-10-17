@@ -91,32 +91,33 @@ Returns `true` if `arg` is either an instance of `Number` or a number primitive.
 ### `Number.isInt8(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is an 8-bit
-signed integer in the range `-2^7 <= arg <= -2^7-1`.
+signed integer in the range -2<sup>7</sup> through 2<sup>7</sup>-1, inclusive.
 
 ### `Number.isInt16(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 16-bit
-signed integer in the range `-2^15 <= arg <= -2^15-1`.
+signed integer in the range -2<sup>15</sup> through 2<sup>15</sup>-1, inclusive.
 
 ### `Number.isInt32(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
-signed integer in the range `-2^31 <= arg <= -2^31-1`.
+signed integer in the range  -2<sup>31</sup> through 2<sup>31</sup>-1,
+inclusive.
 
 ### `Number.isUint8(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is an 8-bit
-unsigned integer in the range `0 <= arg <= 2^8 − 1`.
+unsigned integer in the range 0 through 2<sup>8</sup>-1
 
 ### `Number.isUint16(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 16-bit
-unsigned integer in the range `0 <= arg <= 2^16 − 1`.
+unsigned integer in the range 0 through 2<sup>16</sup>-1
 
 ### `Number.isUint32(arg)`
 
 Returns `true` if `Number.isNumber(arg)` is `true` and `arg` is a 32-bit
-unsigned integer in the range `0 <= arg <= 2^32 − 1`.
+unsigned integer in the range 0 through 2<sup>32</sup>-1
 
 ### `Object.isGeneratorObject(arg)`
 
