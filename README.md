@@ -68,6 +68,10 @@ Returns `true` if `arg` is an instance of `Date`.
 
 Returns `true` if `arg` is an instance of `Error`.
 
+### `Function.isAsyncFunction(arg)`
+
+Returns `true` if `arg` is an async function.
+
 ### `Function.isFunction(arg)`
 
 Returns `true` if `arg` is an instance of `Function`.
