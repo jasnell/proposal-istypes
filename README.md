@@ -84,6 +84,10 @@ Returns `true` if `arg` is an instance of `Map`.
 
 Returns `true` if `arg` is an instance of a `Map` iterator.
 
+### `NaN.isNaN(arg)`
+
+Returns `true` if `arg` is `NaN`.
+
 ### `Number.isNumber(arg)`
 
 Returns `true` if `arg` is either an instance of `Number` or a number primitive.
