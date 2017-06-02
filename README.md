@@ -1,4 +1,4 @@
-# `Is*` Types
+# Builtins.is and Builtins.typeof
 
 ## Motivation
 
