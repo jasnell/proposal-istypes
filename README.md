@@ -1,4 +1,4 @@
-# Builtins.is and Builtins.typeof
+# Builtin.is and Builtin.typeof
 
 ## Motivation
 
@@ -21,7 +21,7 @@ In other cases, `instanceof` does not provide adequate granularity, such as
 checking if a given argument is an unsigned 16-bit integer vs. a signed 32-bit
 integer.
 
-This proposal introduces a new `Builtins` built-in object that exposes methods
+This proposal introduces a new `Builtin` built-in object that exposes methods
 that allow reliable cross-realm type checking for ECMAScript built-ins.
 
 ## Prior art
@@ -49,176 +49,19 @@ false
 
 ## Proposed API
 
-### `Builtins`
+### Identifying an Object as a Built-in
 
-The `Builtins` object is the `%Builtins%` intrinsic object and the initial
-value of the `Builtins` property of the `global` object. The `Builtins`
-object is an ordinary object.
+There are two potential approaches that would work equally well across realms:
 
-The value of the `[[Prototype]]` internal slot of the `Builtins` object is
-the intrinsic object `%ObjectPrototype%`.
+* Using a new `@@builtin` symbol (`Symbol.builtin`) to mark built-ins
+* Using a new `[[Builtin]]` internal slot to mark built-ins
 
-The `Builtins` object is not a function object. It does not have a
-`[[Construct]]` internal method; it is not possible to use the `Builtins`
-object as a constructor with the `new` operator. The `Builtins' object also
-does not have a `[[Call]]` internal method; it is not possible to invoke the
-`Builtins` object as a function.
+We would need to decide which is the best approach.
 
-#### `Builtins.is(value1[, value2])`
-
-When called with a single argument, the `Builtins.is()` function returns `true`
-if the given value is detectable as a built-in object or has an object that is
-detectable as a built-in within its prototype chain. For instance:
-
-```js
-Builtins.is(Date);                               // true
-Builtins.is(vm.runInNewContext('Date'))          // true
-
-const m = {};
-Object.setPrototypeOf(m, Date);
-Builtins.is(m);                                  // true
-
-Date = {};
-Builtins.is(Date);                               // false
-```
-
-When called with two arguments, the `Builtins.is()` returns `true` if both
-given values are the same built-in object, even across realms. For instance:
-
-```js
-Builtins.is(Date, vm.runInNewContext('Date'));     // true
-Builtins.is(Date, vm.runInNewContext('Number'));   // false
-Builtins.is(Date, vm.runInNewContext('{}'));       // false
-Builtins.is({}, vm.runInNewContext('{}'));         // false
-
-const m = {}
-Object.setPrototypeOf(m, Date);
-vm.runInNewContext('Builtins.is(m, Date)', { m }); // true
-
-Date = {};
-Builtins.is(Date, vm.runInNewContext('Date'));     // false
-```
-
-Note: Cross-realm equivalence of built-ins is based entirely on comparing the
-values of the `Symbol.builtin` properties for the two objects.
-
-Host environments that introduce new host specific global or built-in objects
-may return `true` if the value is one of the host specific built-ins.
-
-The `Builtins.is()` function must return `false` if any of the given values are
-not detectable as built-in objects, or are not the same built-in object.
-
-Note that the `Symbol.builtin' symbol may be modified on an object to control
-whether it is detectable as a built-in.
-
-```js
-Date[Symbol.builtin] = undefined;
-Builtins.is(Date);                                  // false
-```
-
-#### `Builtins.typeof(arg)`
-
-When the `typeof()` function is called with argument `arg`:
-
-* If `arg` has a constructor with a `Symbol.builtin` property with a string
-  value, return the value of `Symbol.builtin`
-* Otherwise return the value of `typeof arg`.
-
-For example:
-
-```js
-Builtins.typeof([]);                             // 'Array'
-Builtins.typeof(new ArrayBuffer());              // 'ArrayBuffer'
-Builtins.typeof(async function foo() {});        // 'AsyncFunction'
-Builtins.typeof(new Boolean());                  // 'Boolean'
-Builtins.typeof(new DataView(buffer));           // 'DataView'
-Builtins.typeof(new Date());                     // 'Date'
-Builtins.typeof(new Error());                    // 'Error'
-Builtins.typeof(new EvalError());                // 'EvalError'
-Builtins.typeof(new Float32Array());             // 'Float32Array'
-Builtins.typeof(new Float64Array());             // 'Float64Array'
-Builtins.typeof((function*() {})());             // 'Generator'
-Builtins.typeof(function*() {});                 // 'GeneratorFunction'
-Builtins.typeof(new Int16Array());               // 'Int16Array'
-Builtins.typeof(new Int32Array());               // 'Int32Array'
-Builtins.typeof(new Int8Array());                // 'Int8Array'
-Builtins.typeof(new InternalError());            // 'InternalError'
-Builtins.typeof(new Intl.Collator());            // 'Collator'
-Builtins.typeof(new Intl.DateTimeFormat());      // 'DateTimeFormat'
-Builtins.typeof(new Intl.NumberFormat());        // 'NumberFormat'
-Builtins.typeof(new Map());                      // 'Map'
-Builtins.typeof(new Number());                   // 'Number'
-Builtins.typeof(new Promise(() => {}));          // 'Promise'
-Builtins.typeof(new RangeError());               // 'RangeError'
-Builtins.typeof(new ReferenceError());           // 'ReferenceError'
-Builtins.typeof(new RegExp(''));                 // 'RegExp'
-Builtins.typeof(new Set());                      // 'Set'
-Builtins.typeof(new SharedArrayBuffer());        // 'SharedArrayBuffer'
-Builtins.typeof(new String());                   // 'String'
-Builtins.typeof(new SyntaxError());              // 'SyntaxError'
-Builtins.typeof(new TypeError());                // 'TypeError'
-Builtins.typeof(new URIError());                 // 'URIError'
-Builtins.typeof(new Uint16Array());              // 'Uint16Array'
-Builtins.typeof(new Uint32Array());              // 'Uint32Array'
-Builtins.typeof(new Uint8Array());               // 'Uint8Array'
-Builtins.typeof(new Uint8ClampedArray());        // 'Uint8ClampedArray'
-Builtins.typeof(new WeakMap());                  // 'WeakMap'
-Builtins.typeof(new WeakSet());                  // 'WeatSet'
-Builtins.typeof(new WebAssembly.Module());       // 'Module'
-Builtins.typeof(new WebAssembly.Instance());     // 'Instance'
-Builtins.typeof(new WebAssembly.Memory());       // 'Memory'
-Builtins.typeof(new WebAssembly.Table());        // 'Table'
-Builtins.typeof(new WebAssembly.CompileError()); // 'CompileError'
-Builtins.typeof(new WebAssembly.LinkError());    // 'LinkError'
-Builtins.typeof(new WebAssembly.RuntimeError()); // 'RuntimeError'
-Builtins.typeof(null);                           // 'null'
-Builtins.typeof(undefined);                      // 'undefined'
-Builtins.typeof({});                             // 'object'
-Builtins.typeof(true);                           // 'boolean'
-Builtins.typeof(1);                              // 'number'
-Builtins.typeof('test');                         // 'string'
-Builtins.typeof(Symbol('foo'));                  // 'symbol'
-Builtins.typeof(function() {});                  // 'function'
-```
-
-The `Builtins.typeof()` method would operate consistently on cross-realm
-objects:
-
-For instance, in Node.js:
-
-```js
-Builtins.typeof(vm.runInNewContext('new Date()')); // 'Date'
-```
-
-Host environments that introduce new host specific global or built-in objects
-may return additional implementation defined values. For instance, a
-hypothetical host environment that offers `URL` as a built-in global may return
-the value `'URL'` in response to
-`Builtins.typeof(new URL('http://example.org'))`.
-
-If the given `arg` is an `Object` with a built-in within its prototype chain,
-then `Builtins.typeof()` must return the name of the built-in. For instance:
-
-```js
-class MyArray extends Uint8Array {}
-const myArray = new MyArray();
-Builtins.typeof(myArray);            // 'Uint8Array'
-```
-
-This should also work across realms:
-
-```js
-class MyArray extends Uint8Array {}
-const myArray = new MyArray();
-vm.runInNewContext('Builtins.typeof(myArray)', { myArray }); // 'Uint8Array'
-```
-
-The `Builtins.typeof()` method will not throw an exception.
-
-### `Symbol.builtin`
+#### `Symbol.builtin`
 
 The `Symbol.builtin` is used by to configure by the environment to configure the
-name returned for a built-in using the `Builtins.typeof()` function.
+name returned for a built-in using the `Builtin.typeof()` function.
 
 ```js
 console.log(Date[Symbol.builtin]);    // 'Date'
@@ -233,8 +76,8 @@ object to masquerade as a built-in:
 class Foo {}
 Foo[Symbol.builtin] = 'Foo';
 
-Builtins.is(Foo);               // True
-Builtins.typeof(new Foo());     // 'Foo'
+Builtin.is(Foo);               // True
+Builtin.typeof(new Foo());     // 'Foo'
 ```
 
 An object is detectable as a built-in if it, or it's constructor has, as either
@@ -246,42 +89,212 @@ class MyArray extends Uint8Array {
   static get [Symbol.builtin]() { return undefined; }
 }
 const myArray = new MyArray();
-Builtins.typeof(myArray);                // 'object'
+Builtin.typeof(myArray);                // 'object'
 ```
 
 ```js
 const m = {};
 Object.setPrototypeOf(m, Date);
-Builtins.is(m);                          // true
+Builtin.is(m);                          // true
 
 m[Symbol.builtin] = undefined;
-Builtins.is(m);                          // false
+Builtin.is(m);                          // false
 ```
 
 By default, the `Symbol.builtin` property is `[[Configurable]]: true` and
 `[[Enumerable]]: false`.
 
-### `Proxy.isProxy(value)`
-
-Returns `true` if `value` is a Proxy exotic object.
-
-### Internal Slot Alternative
+#### `[[Builtin]]` internal slot
 
 As an alternative to using `Symbol.builtin` as the mechanism for detecting
 whether an object is a built-in or not, all built-in objects could have a
 `[[Builtin]]` internal slot.
 
-For `Builtins.is(value)`, `true` would be returned if `value` has the
+For `Builtin.is(value)`, `true` would be returned if `value` has the
 `[[Builtin]]` internal slot with a string value.
 
-For `Builtins.is(value1, value2)`, `true` would be returned if both values have
+For `Builtin.is(value1, value2)`, `true` would be returned if both values have
 the `[[Builtin]]` internal slot with strictly equal string values.
 
-For `Builtins.typeof(value)`, the value of the `[[Builtin]]` internal slot for
+For `Builtin.typeof(value)`, the value of the `[[Builtin]]` internal slot for
 `value.constructor`, or any object in the prototype chain for
 `value.constructor', is returned. If there is no `value.constructor`, or the
 `value.constructor` prototype chain does not have a `[[Builtin]]` internal slot,
 the value of `typeof value` is returned.
+
+### `Builtin`
+
+The `Builtin` object is the `%Builtin%` intrinsic object and the initial
+value of the `Builtin` property of the `global` object. The `Builtin`
+object is an ordinary object.
+
+The value of the `[[Prototype]]` internal slot of the `Builtin` object is
+the intrinsic object `%ObjectPrototype%`.
+
+The `Builtin` object is not a function object. It does not have a
+`[[Construct]]` internal method; it is not possible to use the `Builtin`
+object as a constructor with the `new` operator. The `Builtin' object also
+does not have a `[[Call]]` internal method; it is not possible to invoke the
+`Builtin` object as a function.
+
+#### `Builtin.is(value1[, value2])`
+
+When called with a single argument, the `Builtin.is()` function returns `true`
+if the given value is detectable as a built-in object.
+
+```js
+Builtin.is(Date);                               // true
+Builtin.is(vm.runInNewContext('Date'))          // true
+
+const m = {};
+Object.setPrototypeOf(m, Date);
+Builtin.is(m);                                  // false
+
+const n = new Date();
+Builtin.is(n);                                  // false
+
+Date = {};
+Builtin.is(Date);                               // false
+```
+
+When called with two arguments, the `Builtin.is()` returns `true` if both
+given values are the same built-in object, even across realms. For instance:
+
+```js
+Builtin.is(Date, vm.runInNewContext('Date'));     // true
+Builtin.is(Date, vm.runInNewContext('Number'));   // false
+Builtin.is(Date, vm.runInNewContext('{}'));       // false
+Builtin.is({}, vm.runInNewContext('{}'));         // false
+
+Date = {};
+Builtin.is(Date, vm.runInNewContext('Date'));     // false
+```
+
+Note: Cross-realm equivalence of built-ins is based entirely on comparing the
+values of the `Symbol.builtin` properties (or `[[Builtin]]` internal slot if
+we go that direction instead) for the two objects.
+
+Host environments that introduce new host specific global or built-in objects
+may return `true` if the value is one of the host specific built-ins.
+
+The `Builtin.is()` function must return `false` if any of the given values are
+not detectable as built-in objects, or are not the same built-in object.
+
+Note that, if we go with the Symbol approach, the `Symbol.builtin' symbol may
+be modified on an object to control whether it is detectable as a built-in.
+
+```js
+Date[Symbol.builtin] = undefined;
+Builtin.is(Date);                                  // false
+```
+
+#### `Builtin.typeof(arg)`
+
+When the `typeof()` function is called with argument `arg`:
+
+* If we go with the `Symbol.builtin` approach:
+  * If `arg` has a constructor with a `Symbol.builtin` property with a string
+    value, return the value of `Symbol.builtin`.
+* If we go with the `[[Builtin]]` internal slot approach:
+  * If `arg` has a constructor, or any object in that constructor's prototype
+    chain, has `[[Builtin]]` internal slot with a string value, return the value
+    of `[[Builtin]]` 
+* Otherwise return the value of `typeof arg`.
+
+For example:
+
+```js
+Builtin.typeof([]);                             // 'Array'
+Builtin.typeof(new ArrayBuffer());              // 'ArrayBuffer'
+Builtin.typeof(async function foo() {});        // 'AsyncFunction'
+Builtin.typeof(new Boolean());                  // 'Boolean'
+Builtin.typeof(new DataView(buffer));           // 'DataView'
+Builtin.typeof(new Date());                     // 'Date'
+Builtin.typeof(new Error());                    // 'Error'
+Builtin.typeof(new EvalError());                // 'EvalError'
+Builtin.typeof(new Float32Array());             // 'Float32Array'
+Builtin.typeof(new Float64Array());             // 'Float64Array'
+Builtin.typeof((function*() {})());             // 'Generator'
+Builtin.typeof(function*() {});                 // 'GeneratorFunction'
+Builtin.typeof(new Int16Array());               // 'Int16Array'
+Builtin.typeof(new Int32Array());               // 'Int32Array'
+Builtin.typeof(new Int8Array());                // 'Int8Array'
+Builtin.typeof(new InternalError());            // 'InternalError'
+Builtin.typeof(new Intl.Collator());            // 'Collator'
+Builtin.typeof(new Intl.DateTimeFormat());      // 'DateTimeFormat'
+Builtin.typeof(new Intl.NumberFormat());        // 'NumberFormat'
+Builtin.typeof(new Map());                      // 'Map'
+Builtin.typeof(new Number());                   // 'Number'
+Builtin.typeof(new Promise(() => {}));          // 'Promise'
+Builtin.typeof(new RangeError());               // 'RangeError'
+Builtin.typeof(new ReferenceError());           // 'ReferenceError'
+Builtin.typeof(new RegExp(''));                 // 'RegExp'
+Builtin.typeof(new Set());                      // 'Set'
+Builtin.typeof(new SharedArrayBuffer());        // 'SharedArrayBuffer'
+Builtin.typeof(new String());                   // 'String'
+Builtin.typeof(new SyntaxError());              // 'SyntaxError'
+Builtin.typeof(new TypeError());                // 'TypeError'
+Builtin.typeof(new URIError());                 // 'URIError'
+Builtin.typeof(new Uint16Array());              // 'Uint16Array'
+Builtin.typeof(new Uint32Array());              // 'Uint32Array'
+Builtin.typeof(new Uint8Array());               // 'Uint8Array'
+Builtin.typeof(new Uint8ClampedArray());        // 'Uint8ClampedArray'
+Builtin.typeof(new WeakMap());                  // 'WeakMap'
+Builtin.typeof(new WeakSet());                  // 'WeatSet'
+Builtin.typeof(new WebAssembly.Module());       // 'Module'
+Builtin.typeof(new WebAssembly.Instance());     // 'Instance'
+Builtin.typeof(new WebAssembly.Memory());       // 'Memory'
+Builtin.typeof(new WebAssembly.Table());        // 'Table'
+Builtin.typeof(new WebAssembly.CompileError()); // 'CompileError'
+Builtin.typeof(new WebAssembly.LinkError());    // 'LinkError'
+Builtin.typeof(new WebAssembly.RuntimeError()); // 'RuntimeError'
+Builtin.typeof(null);                           // 'null'
+Builtin.typeof(undefined);                      // 'undefined'
+Builtin.typeof({});                             // 'object'
+Builtin.typeof(true);                           // 'boolean'
+Builtin.typeof(1);                              // 'number'
+Builtin.typeof('test');                         // 'string'
+Builtin.typeof(Symbol('foo'));                  // 'symbol'
+Builtin.typeof(function() {});                  // 'function'
+```
+
+The `Builtin.typeof()` method would operate consistently on cross-realm
+objects:
+
+For instance, in Node.js:
+
+```js
+Builtin.typeof(vm.runInNewContext('new Date()')); // 'Date'
+```
+
+Host environments that introduce new host specific global or built-in objects
+may return additional implementation defined values. For instance, a
+hypothetical host environment that offers `URL` as a built-in global may return
+the value `'URL'` in response to
+`Builtin.typeof(new URL('http://example.org'))`.
+
+If the given `arg` is an `Object` with a built-in within its prototype chain,
+then `Builtin.typeof()` must return the name of the built-in. For instance:
+
+```js
+class MyArray extends Uint8Array {}
+const myArray = new MyArray();
+Builtin.typeof(myArray);            // 'Uint8Array'
+```
+
+This should also work across realms:
+
+```js
+class MyArray extends Uint8Array {}
+const myArray = new MyArray();
+vm.runInNewContext('Builtin.typeof(myArray)', { myArray }); // 'Uint8Array'
+```
+
+The `Builtin.typeof()` method will not throw an exception.
+
+### `Proxy.isProxy(value)`
+
+Returns `true` if `value` is a Proxy exotic object.
 
 ### Notes
 
@@ -294,15 +307,15 @@ the value of `typeof value` is returned.
   `Proxy.isProxy()` is that, when debugging code, it can often be necessary
   to know if the an object of interest is a Proxy or not.
 
-* The `Builtins` property on the `global` object is set initially to the
-  `Builtins` object. This property is `[[Configurable]]: true` and
+* The `Builtin` property on the `global` object is set initially to the
+  `Builtin` object. This property is `[[Configurable]]: true` and
   `[[Enumerable]]: true`.
 
-* Both the `Builtins.is` and `Builtins.typeof` properties are
+* Both the `Builtin.is` and `Builtin.typeof` properties are
   [[Configurable]]: true` and `[[Enumerable]]: true`
 
-* If `Foo` is a built-in, `Builtins.typeof(Foo) === 'object'` and
-  `Builtins.typeof(Foo.prototype) === 'object'` unless the prototype just
+* If `Foo` is a built-in, `Builtin.typeof(Foo) === 'object'` and
+  `Builtin.typeof(Foo.prototype) === 'object'` unless the prototype just
   happens to also be a built-in.
 
 * All of the built-in objects would be assigned a default initial value for
@@ -363,16 +376,16 @@ the value of `typeof value` is returned.
 ## Questions
 
 1. Should:
-    * `Builtins.is(undefined) === false` ?
-    * `Builtins.is(null) === false` ?
-    * `Builtins.is(1) === false` ?  // Basically, should any primitives be
+    * `Builtin.is(undefined) === false` ?
+    * `Builtin.is(null) === false` ?
+    * `Builtin.is(1) === false` ?  // Basically, should any primitives be
       detectable as built-ins?
 
 ## Example
 
 ```js
 function formatValue(value) {
-  switch (Builtins.typeof(value)) {
+  switch (Builtin.typeof(value)) {
     case 'Date':
       return formatDate(value);
     case 'Array':
