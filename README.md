@@ -265,10 +265,29 @@ By default, the `Symbol.builtin` property is `[[Configurable]]: true` and
 
 Returns `true` if `value` is a Proxy exotic object.
 
+### Internal Slot Alternative
+
+As an alternative to using `Symbol.builtin` as the mechanism for detecting
+whether an object is a built-in or not, all built-in objects could have a
+`[[Builtin]]` internal slot.
+
+For `Builtins.is(value)`, `true` would be returned if `value` has the
+`[[Builtin]]` internal slot with a string value.
+
+For `Builtins.is(value1, value2)`, `true` would be returned if both values have
+the `[[Builtin]]` internal slot with strictly equal string values.
+
+For `Builtins.typeof(value)`, the value of the `[[Builtin]]` internal slot for
+`value.constructor`, or any object in the prototype chain for
+`value.constructor', is returned. If there is no `value.constructor`, or the
+`value.constructor` prototype chain does not have a `[[Builtin]]` internal slot,
+the value of `typeof value` is returned.
+
 ### Notes
 
-* Yes, this means that any object can lie about being a built-in by setting the
-  `Symbol.builtin` property to whatever value it wants. That is by design.
+* Using the `Symbol.builtin` approach means that any object can lie about being
+  a built-in by setting the `Symbol.builtin` property to whatever value it
+  wants. That is by design.
 
 * Why have a separate `Proxy.isProxy()` function? For the simple reason that
   `Proxy` objects do not act like anything else. The use case justifying
@@ -286,8 +305,9 @@ Returns `true` if `value` is a Proxy exotic object.
   `Builtins.typeof(Foo.prototype) === 'object'` unless the prototype just
   happens to also be a built-in.
 
-* All of the built-in objects would be assigned a default initial value for the
-  `Symbol.builtin` property equal to the name of the object.
+* All of the built-in objects would be assigned a default initial value for
+  either the `Symbol.builtin` property or the `[[Builtin]]` internal slot
+  (depending on the approach take) equal to the name of the object.
     * `Array[Symbol.builtin] = 'Array'`
     * `ArrayBuffer[Symbol.builtin] = 'ArrayBuffer'`
     * `AsyncFunction[Symbol.builtin] = 'AsyncFunction'`
