@@ -67,8 +67,8 @@ does not have a `[[Call]]` internal method; it is not possible to invoke the
 #### `Builtins.is(value1[, value2])`
 
 When called with a single argument, the `Builtins.is()` function returns `true`
-if the given value is either a built-in object or has a built-in object within
-its prototype chain. For instance:
+if the given value is detectable as a built-in object or has an object that is
+detectable as a built-in within its prototype chain. For instance:
 
 ```js
 Builtins.is(Date);                               // true
@@ -99,20 +99,30 @@ Date = {};
 Builtins.is(Date, vm.runInNewContext('Date'));     // false
 ```
 
+Note: Cross-realm equivalence of built-ins is based entirely on comparing the
+values of the `Symbol.builtin` properties for the two objects.
+
 Host environments that introduce new host specific global or built-in objects
 may return `true` if the value is one of the host specific built-ins.
 
 The `Builtins.is()` function must return `false` if any of the given values are
-not built-in objects, or are not the same built-in object. (*TODO*: Need a
-better definition of "same").
+not detectable as built-in objects, or are not the same built-in object.
+
+Note that the `Symbol.builtin' symbol may be modified on an object to control
+whether it is detectable as a built-in.
+
+```js
+Date[Symbol.builtin] = undefined;
+Builtins.is(Date);                                  // false
+```
 
 #### `Builtins.typeof(arg)`
 
 When the `typeof()` function is called with argument `arg`:
 
-* If `arg` is an instance of a built-in constructor object, the name of the
-  built-ins constructor is returned;
-* Otherwise the value of `typeof arg` is returned.
+* If `arg` has a constructor with a `Symbol.builtin` property with a string
+  value, return the value of `Symbol.builtin`
+* Otherwise return the value of `typeof arg`.
 
 For example:
 
@@ -139,7 +149,6 @@ Builtins.typeof(new Intl.NumberFormat());        // 'NumberFormat'
 Builtins.typeof(new Map());                      // 'Map'
 Builtins.typeof(new Number());                   // 'Number'
 Builtins.typeof(new Promise(() => {}));          // 'Promise'
-Builtins.typeof(new Proxy({}, {}));              // 'Proxy'
 Builtins.typeof(new RangeError());               // 'RangeError'
 Builtins.typeof(new ReferenceError());           // 'ReferenceError'
 Builtins.typeof(new RegExp(''));                 // 'RegExp'
@@ -206,18 +215,35 @@ vm.runInNewContext('Builtins.typeof(myArray)', { myArray }); // 'Uint8Array'
 
 The `Builtins.typeof()` method will not throw an exception.
 
-### `Symbol.isBuiltinDetectable`
+### `Symbol.builtin`
 
-The `Symbol.isBuiltinDetectable` is used to configure if an object should be
-detectable as a built-in using either the `Builtins.is()` or `Builtins.typeof()`
-functions.
+The `Symbol.builtin` is used by to configure by the environment to configure the
+name returned for a built-in using the `Builtins.typeof()` function.
 
-The `Symbol.isBuiltinDetectable` can be defined as an own or inherited
-property and its value is a `boolean`.
+```js
+console.log(Date[Symbol.builtin]);    // 'Date'
+console.log(Set[Symbol.builtin]);     // 'Set'
+```
+
+Generally, the `Symbol.builtin` property is set by the host environment to
+allow built-ins to be detectable. It may also be used by users to allow an
+object to masquerade as a built-in:
+
+```js
+class Foo {}
+Foo[Symbol.builtin] = 'Foo';
+
+Builtins.is(Foo);               // True
+Builtins.typeof(new Foo());     // 'Foo'
+```
+
+An object is detectable as a built-in if it, or it's constructor has, as either
+an own or inherited property, a `Symbol.builtin` property whose value is a
+string.
 
 ```js
 class MyArray extends Uint8Array {
-  static get [Symbol.isBuiltinDetectable]() { return false; }
+  static get [Symbol.builtin]() { return undefined; }
 }
 const myArray = new MyArray();
 Builtins.typeof(myArray);                // 'object'
@@ -228,6 +254,112 @@ const m = {};
 Object.setPrototypeOf(m, Date);
 Builtins.is(m);                          // true
 
-m[Symbol.isBuiltinDetectable] = false;
+m[Symbol.builtin] = undefined;
 Builtins.is(m);                          // false
+```
+
+By default, the `Symbol.builtin` property is `[[Configurable]]: true` and
+`[[Enumerable]]: false`.
+
+### `Proxy.isProxy(value)`
+
+Returns `true` if `value` is a Proxy exotic object.
+
+### Notes
+
+* Yes, this means that any object can lie about being a built-in by setting the
+  `Symbol.builtin` property to whatever value it wants. That is by design.
+
+* Why have a separate `Proxy.isProxy()` function? For the simple reason that
+  `Proxy` objects do not act like anything else. The use case justifying
+  `Proxy.isProxy()` is that, when debugging code, it can often be necessary
+  to know if the an object of interest is a Proxy or not.
+
+* The `Builtins` property on the `global` object is set initially to the
+  `Builtins` object. This property is `[[Configurable]]: true` and
+  `[[Enumerable]]: true`.
+
+* Both the `Builtins.is` and `Builtins.typeof` properties are
+  [[Configurable]]: true` and `[[Enumerable]]: true`
+
+* If `Foo` is a built-in, `Builtins.typeof(Foo) === 'object'` and
+  `Builtins.typeof(Foo.prototype) === 'object'` unless the prototype just
+  happens to also be a built-in.
+
+* All of the built-in objects would be assigned a default initial value for the
+  `Symbol.builtin` property equal to the name of the object.
+    * `Array[Symbol.builtin] = 'Array'`
+    * `ArrayBuffer[Symbol.builtin] = 'ArrayBuffer'`
+    * `AsyncFunction[Symbol.builtin] = 'AsyncFunction'`
+    * `Atomics[Symbol.builtin] = 'Atomics'`
+    * `Boolean[Symbol.builtin] = 'Boolean'`
+    * `DataView[Symbol.builtin] = 'DataView'`
+    * `Date[Symbol.builtin] = 'Date'`
+    * `Error[Symbol.builtin] = 'Error'`
+    * `EvalError[Symbol.builtin] = 'EvalError'`
+    * `Float32Array[Symbol.builtin] = 'Float32Array'`
+    * `Float64Array[Symbol.builtin] = 'Float64Array'`
+    * `Generator[Symbol.builtin] = 'Generator'`
+    * `GeneratorFunction[Symbol.builtin] = 'GeneratorFunction'`
+    * `Int16Array[Symbol.builtin] = 'Int16Array'`
+    * `Int32Array[Symbol.builtin] = 'Int32Array'`
+    * `Int8Array[Symbol.builtin] = 'Int8Array'`
+    * `InternalError[Symbol.builtin] = 'InternalError'`
+    * `Intl[Symbol.builtin] = 'Intl'`
+    * `Intl.Collator[Symbol.builtin] = 'Collator'`
+    * `Intl.DateTimeFormat[Symbol.builtin] = 'DateTimeFormat'`
+    * `Intl.NumberFormat[Symbol.builtin] = 'NumberFormat'`
+    * `JSON[Symbol.builtin] = 'JSON'`
+    * `Map[Symbol.builtin] = 'Map'`
+    * `Math[Symbol.builtin] = 'Math'`
+    * `NaN[Symbol.builtin] = 'NaN'`
+    * `Number[Symbol.builtin] = 'Number'`
+    * `Promise[Symbol.builtin] = 'Promise'`
+    * `RangeError[Symbol.builtin] = 'RangeError'`
+    * `ReferenceError[Symbol.builtin] = 'ReferenceError'`
+    * `Reflect[Symbol.builtin] = 'Reflect'`
+    * `RegExp[Symbol.builtin] = 'RegExp'`
+    * `Set[Symbol.builtin] = 'Set'`
+    * `SharedArrayBuffer[Symbol.builtin] = 'SharedArrayBuffer'`
+    * `String[Symbol.builtin] = 'String'`
+    * `SyntaxError[Symbol.builtin] = 'SyntaxError'`
+    * `TypeError[Symbol.builtin] = 'TypeError'`
+    * `URIError[Symbol.builtin] = 'URIError'`
+    * `Uint16Array[Symbol.builtin] = 'Uint16Array'`
+    * `Uint32Array[Symbol.builtin] = 'Uint32Array'`
+    * `Uint8Array[Symbol.builtin] = 'Uint8Array'`
+    * `Uint8ClampedArray[Symbol.builtin] = 'Uint8ClampedArray'`
+    * `WeakMap[Symbol.builtin] = 'WeakMap'`
+    * `WeatSet[Symbol.builtin] = 'WeatSet'`
+    * `WebAssembly[Symbol.builtin] = 'WebAssembly'`
+    * `WebAssembly.Module[Symbol.builtin] = 'Module'`
+    * `WebAssembly.Instance[Symbol.builtin] = 'Instance'`
+    * `WebAssembly.Memory[Symbol.builtin] = 'Memory'`
+    * `WebAssembly.Table[Symbol.builtin] = 'Table'`
+    * `WebAssembly.CompileError[Symbol.builtin] = 'CompileError'`
+    * `WebAssembly.LinkError[Symbol.builtin] = 'LinkError'`
+    * `WebAssembly.RuntimeError[Symbol.builtin] = 'RuntimeError'`
+
+## Questions
+
+1. Should:
+    * `Builtins.is(undefined) === false` ?
+    * `Builtins.is(null) === false` ?
+    * `Builtins.is(1) === false` ?  // Basically, should any primitives be
+      detectable as built-ins?
+
+## Example
+
+```js
+function formatValue(value) {
+  switch (Builtins.typeof(value)) {
+    case 'Date':
+      return formatDate(value);
+    case 'Array':
+      return formatArray(value);
+    case 'RegExp':
+      return formatRegExp(value);
+    /** ... **/
+  }
+}
 ```
