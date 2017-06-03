@@ -74,7 +74,13 @@ An object is identified as a built-in using:
 
 All built-ins, with the exception of the intrinsic object `%ObjectPrototype%`,
 would have a `[[Builtin]]` internal slot with a string value identifying the
-default name of the built-in.
+name of the built-in. For instance, for the `%Math%` intrinsic object, the
+value of `[[Builtin]]` is `'Math'`.
+
+For `%TypedArray%` intrinsic objects, the value of `[[Builtin]]` is equal to
+the value of `[[TypedArrayName]]`. For instance, for a `%TypedArray%` with
+`[[TypedArrayName]]` `'Uint8Array'`, the value of `[[Builtin]]` is
+`'Uint8Array'`.
 
 #### `Symbol.builtin`
 
@@ -285,7 +291,7 @@ The `Proxy.isProxy()` function will not throw an exception.
 
 * Why have a separate `Proxy.isProxy()` function? For the simple reason that
   `Proxy` objects do not act like anything else. The use case justifying
-  `Proxy.isProxy()` is that, when debugging code, it can often be necessary
+  `Proxy.isProxy()` is that, when debugging, it can often be necessary
   to know if the an object of interest is a Proxy or not.
 
 * The `Builtin` property on the `global` object is set initially to the
@@ -303,57 +309,50 @@ The `Proxy.isProxy()` function will not throw an exception.
 * All of the built-in objects would be assigned a default initial value for
   the `[[Builtin]]` internal slot. These become the initial value of the
   `@@builtin` own property for each object.
-    * `Array[[Builtin]] = 'Array'`
-    * `ArrayBuffer[[Builtin]] = 'ArrayBuffer'`
-    * `AsyncFunction[[Builtin]] = 'AsyncFunction'`
-    * `Atomics[[Builtin]] = 'Atomics'`
-    * `Boolean[[Builtin]] = 'Boolean'`
-    * `DataView[[Builtin]] = 'DataView'`
-    * `Date[[Builtin]] = 'Date'`
-    * `Error[[Builtin]] = 'Error'`
-    * `EvalError[[Builtin]] = 'EvalError'`
-    * `Float32Array[[Builtin]] = 'Float32Array'`
-    * `Float64Array[[Builtin]] = 'Float64Array'`
-    * `Generator[[Builtin]] = 'Generator'`
-    * `GeneratorFunction[[Builtin]] = 'GeneratorFunction'`
-    * `Int16Array[[Builtin]] = 'Int16Array'`
-    * `Int32Array[[Builtin]] = 'Int32Array'`
-    * `Int8Array[[Builtin]] = 'Int8Array'`
-    * `InternalError[[Builtin]] = 'InternalError'`
-    * `Intl[[Builtin]] = 'Intl'`
-    * `Intl.Collator[[Builtin]] = 'Collator'`
-    * `Intl.DateTimeFormat[[Builtin]] = 'DateTimeFormat'`
-    * `Intl.NumberFormat[[Builtin]] = 'NumberFormat'`
-    * `JSON[[Builtin]] = 'JSON'`
-    * `Map[[Builtin]] = 'Map'`
-    * `Math[[Builtin]] = 'Math'`
-    * `NaN[[Builtin]] = 'NaN'`
-    * `Number[[Builtin]] = 'Number'`
-    * `Promise[[Builtin]] = 'Promise'`
-    * `RangeError[[Builtin]] = 'RangeError'`
-    * `ReferenceError[[Builtin]] = 'ReferenceError'`
-    * `Reflect[[Builtin]] = 'Reflect'`
-    * `RegExp[[Builtin]] = 'RegExp'`
-    * `Set[[Builtin]] = 'Set'`
-    * `SharedArrayBuffer[[Builtin]] = 'SharedArrayBuffer'`
-    * `String[[Builtin]] = 'String'`
-    * `SyntaxError[[Builtin]] = 'SyntaxError'`
-    * `TypeError[[Builtin]] = 'TypeError'`
-    * `URIError[[Builtin]] = 'URIError'`
-    * `Uint16Array[[Builtin]] = 'Uint16Array'`
-    * `Uint32Array[[Builtin]] = 'Uint32Array'`
-    * `Uint8Array[[Builtin]] = 'Uint8Array'`
-    * `Uint8ClampedArray[[Builtin]] = 'Uint8ClampedArray'`
-    * `WeakMap[[Builtin]] = 'WeakMap'`
-    * `WeatSet[[Builtin]] = 'WeatSet'`
-    * `WebAssembly[[Builtin]] = 'WebAssembly'`
-    * `WebAssembly.Module[[Builtin]] = 'Module'`
-    * `WebAssembly.Instance[[Builtin]] = 'Instance'`
-    * `WebAssembly.Memory[[Builtin]] = 'Memory'`
-    * `WebAssembly.Table[[Builtin]] = 'Table'`
-    * `WebAssembly.CompileError[[Builtin]] = 'CompileError'`
-    * `WebAssembly.LinkError[[Builtin]] = 'LinkError'`
-    * `WebAssembly.RuntimeError[[Builtin]] = 'RuntimeError'`
+    * `Array.[[Builtin]] = 'Array'`
+    * `ArrayBuffer.[[Builtin]] = 'ArrayBuffer'`
+    * `AsyncFunction.[[Builtin]] = 'AsyncFunction'`
+    * `Atomics.[[Builtin]] = 'Atomics'`
+    * `Boolean.[[Builtin]] = 'Boolean'`
+    * `Builtint.[[Builtin]] = 'Builtin'`
+    * `DataView.[[Builtin]] = 'DataView'`
+    * `Date.[[Builtin]] = 'Date'`
+    * `Error.[[Builtin]] = 'Error'`
+    * `EvalError.[[Builtin]] = 'EvalError'`
+    * `Float32Array.[[Builtin]] = 'Float32Array'`
+    * `Float64Array.[[Builtin]] = 'Float64Array'`
+    * `Generator.[[Builtin]] = 'Generator'`
+    * `GeneratorFunction.[[Builtin]] = 'GeneratorFunction'`
+    * `Int16Array.[[Builtin]] = 'Int16Array'`
+    * `Int32Array.[[Builtin]] = 'Int32Array'`
+    * `Int8Array.[[Builtin]] = 'Int8Array'`
+    * `InternalError.[[Builtin]] = 'InternalError'`
+    * `Intl.[[Builtin]] = 'Intl'`
+      * `Intl.Collator.[[Builtin]] = 'Collator'`
+      * `Intl.DateTimeFormat.[[Builtin]] = 'DateTimeFormat'`
+      * `Intl.NumberFormat.[[Builtin]] = 'NumberFormat'`
+    * `JSON.[[Builtin]] = 'JSON'`
+    * `Map.[[Builtin]] = 'Map'`
+    * `Math.[[Builtin]] = 'Math'`
+    * `NaN.[[Builtin]] = 'NaN'`
+    * `Number.[[Builtin]] = 'Number'`
+    * `Promise.[[Builtin]] = 'Promise'`
+    * `RangeError.[[Builtin]] = 'RangeError'`
+    * `ReferenceError.[[Builtin]] = 'ReferenceError'`
+    * `Reflect.[[Builtin]] = 'Reflect'`
+    * `RegExp.[[Builtin]] = 'RegExp'`
+    * `Set.[[Builtin]] = 'Set'`
+    * `SharedArrayBuffer.[[Builtin]] = 'SharedArrayBuffer'`
+    * `String.[[Builtin]] = 'String'`
+    * `SyntaxError.[[Builtin]] = 'SyntaxError'`
+    * `TypeError.[[Builtin]] = 'TypeError'`
+    * `URIError.[[Builtin]] = 'URIError'`
+    * `Uint16Array.[[Builtin]] = 'Uint16Array'`
+    * `Uint32Array.[[Builtin]] = 'Uint32Array'`
+    * `Uint8Array.[[Builtin]] = 'Uint8Array'`
+    * `Uint8ClampedArray.[[Builtin]] = 'Uint8ClampedArray'`
+    * `WeakMap.[[Builtin]] = 'WeakMap'`
+    * `WeatSet.[[Builtin]] = 'WeatSet'`
 
 ## Examples
 
