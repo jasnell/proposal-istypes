@@ -47,80 +47,77 @@ true
 false
 ```
 
+## Requirements
+
+What is needed?
+
+* Mechanism for reliably determining if any given object is a built-in or is an
+  instance of a built-in, even across realms.
+* Mechanism for reliably determining if objects from different realms correspond
+  to the same built-in (e.g. `Date` from one realm is the same built-in as
+  `Date` from a second realm).
+* Avoid introducing new, or changing existing, language syntax.
+* Allow host environments to insert new built-ins.
+* Allow user code objects to masquerade as built-ins.
+
 ## Proposed API
 
 ### Identifying an Object as a Built-in
 
-There are two potential approaches that would work equally well across realms:
+An object is identified as a built-in using:
 
-* Using a new `@@builtin` symbol (`Symbol.builtin`) to mark built-ins
-* Using a new `[[Builtin]]` internal slot to mark built-ins
-
-We would need to decide which is the best approach.
-
-#### `Symbol.builtin`
-
-The `Symbol.builtin` is used by to configure by the environment to configure the
-name returned for a built-in using the `Builtin.typeof()` function.
-
-```js
-console.log(Date[Symbol.builtin]);    // 'Date'
-console.log(Set[Symbol.builtin]);     // 'Set'
-```
-
-Generally, the `Symbol.builtin` property is set by the host environment to
-allow built-ins to be detectable. It may also be used by users to allow an
-object to masquerade as a built-in:
-
-```js
-class Foo {}
-Foo[Symbol.builtin] = 'Foo';
-
-Builtin.is(Foo);               // True
-Builtin.typeof(new Foo());     // 'Foo'
-```
-
-An object is detectable as a built-in if it, or it's constructor has, as either
-an own or inherited property, a `Symbol.builtin` property whose value is a
-string.
-
-```js
-class MyArray extends Uint8Array {
-  static get [Symbol.builtin]() { return undefined; }
-}
-const myArray = new MyArray();
-Builtin.typeof(myArray);                // 'object'
-```
-
-```js
-const m = {};
-Object.setPrototypeOf(m, Date);
-Builtin.is(m);                          // true
-
-m[Symbol.builtin] = undefined;
-Builtin.is(m);                          // false
-```
-
-By default, the `Symbol.builtin` property is `[[Configurable]]: true` and
-`[[Enumerable]]: false`.
+* A new `[[Builtin]]` internal slot to mark built-ins
+* A new `@@builtin` symbol (`Symbol.builtin`) property whose default behavior
+  is to provide the value of the `[[Builtin]]` internal slot.
 
 #### `[[Builtin]]` internal slot
 
-As an alternative to using `Symbol.builtin` as the mechanism for detecting
-whether an object is a built-in or not, all built-in objects could have a
-`[[Builtin]]` internal slot.
+All built-ins, with the exception of the intrinsic object `%ObjectPrototype%`,
+would have a `[[Builtin]]` internal slot with a string value identifying the
+default name of the built-in.
 
-For `Builtin.is(value)`, `true` would be returned if `value` has the
-`[[Builtin]]` internal slot with a string value.
+#### `Symbol.builtin`
 
-For `Builtin.is(value1, value2)`, `true` would be returned if both values have
-the `[[Builtin]]` internal slot with strictly equal string values.
+The initial value of the `@@builtin` own property is the value of the
+`[[Builtin]]` internal slot, or `undefined` if the object does not have
+a `[[Builtin]]` internal slot.
 
-For `Builtin.typeof(value)`, the value of the `[[Builtin]]` internal slot for
-`value.constructor`, or any object in the prototype chain for
-`value.constructor', is returned. If there is no `value.constructor`, or the
-`value.constructor` prototype chain does not have a `[[Builtin]]` internal slot,
-the value of `typeof value` is returned.
+An object is detectable as a built-in if it has the `@@builtin` own property.
+
+An object is detectable as an instance of a built-in if its constructor has a
+`@@builtin` property as either an own or inherited property.
+
+```js
+class Foo {}
+class Bar extends Foo {}
+
+Foo[Symbol.builtin] = 'Foo';
+
+Builtin.is(Foo);               // true, Symbol.builtin is an own property
+Builtin.typeof(new Foo());     // 'Foo'
+
+Builtin.is(Bar);               // false, Symbol.builtin is inherited
+Builtin.typeof(new Bar());     // 'Foo'
+```
+
+Setting the `@@builtin` property to a non-string value makes the object,
+or instances of the object, no longer detectable as built-ins:
+
+```js
+Builtin.is(Uint8Array);                 // true
+Builtin.typeof(new Uint8Array(0));      // 'Uint8Array'
+
+Uint8Array[Symbol.builtin] = undefined;
+
+Builtin.is(Uint8Array);                 // false
+Builtin.typeof(new Uint8Array(0));      // 'object'
+```
+
+The `@@builtin` property has the attributes:
+
+* `[[Configurable]]: true`
+* `[[Enumerable]]: false`
+* `[[Writable]]: true`
 
 ### `Builtin`
 
@@ -133,14 +130,30 @@ the intrinsic object `%ObjectPrototype%`.
 
 The `Builtin` object is not a function object. It does not have a
 `[[Construct]]` internal method; it is not possible to use the `Builtin`
-object as a constructor with the `new` operator. The `Builtin' object also
+object as a constructor with the `new` operator. The `Builtin` object also
 does not have a `[[Call]]` internal method; it is not possible to invoke the
 `Builtin` object as a function.
 
 #### `Builtin.is(value1[, value2])`
 
+When called with arguments `value1` and `value2`:
+
+* If `Type(value1)` is not `Object` return `false`.
+* Let `B` be `? value1.[[GetOwnProperty]](@@builtin)`.
+* If `B` is `undefined`, return `false`.
+* Let `V1` be `? GET(value1, @@builtin)`.
+* If `Type(V1)` is not `String`, return `false`.
+* If `value2` is `undefined`, return `true`.
+* If `Type(value2)` is not `Object`, return `false`.
+* Let `B` be `? value2.[[GetOwnProperty]](@@builtin)`.
+* If `B` is `undefined`, return `false`.
+* Let `V2` be `? GET(value2, @@builtin)`.
+* If `Type(V2)` is not `String`, return `false`.
+* Let `same` be the result of performing Strict Equality Comparison `V1 === V2`.
+* Return `same`
+
 When called with a single argument, the `Builtin.is()` function returns `true`
-if the given value is detectable as a built-in object.
+if the given value has the `@@builtin` own property:
 
 ```js
 Builtin.is(Date);                               // true
@@ -157,8 +170,10 @@ Date = {};
 Builtin.is(Date);                               // false
 ```
 
-When called with two arguments, the `Builtin.is()` returns `true` if both
-given values are the same built-in object, even across realms. For instance:
+When called with two arguments, the `Builtin.is()` function returns `true` if
+both given values have the `@@builtin` own property and the value of both
+`@@builtin` own properties are strictly equal to one another. Otherwise,
+return `false`.
 
 ```js
 Builtin.is(Date, vm.runInNewContext('Date'));     // true
@@ -170,36 +185,25 @@ Date = {};
 Builtin.is(Date, vm.runInNewContext('Date'));     // false
 ```
 
-Note: Cross-realm equivalence of built-ins is based entirely on comparing the
-values of the `Symbol.builtin` properties (or `[[Builtin]]` internal slot if
-we go that direction instead) for the two objects.
-
-Host environments that introduce new host specific global or built-in objects
-may return `true` if the value is one of the host specific built-ins.
-
-The `Builtin.is()` function must return `false` if any of the given values are
-not detectable as built-in objects, or are not the same built-in object.
-
-Note that, if we go with the Symbol approach, the `Symbol.builtin' symbol may
-be modified on an object to control whether it is detectable as a built-in.
+Note that user code may modify the `@@builtin` own property on any object:
 
 ```js
 Date[Symbol.builtin] = undefined;
 Builtin.is(Date);                                  // false
 ```
 
+The `Builtin.is()` function will not throw an exception.
+
 #### `Builtin.typeof(arg)`
 
 When the `typeof()` function is called with argument `arg`:
 
-* If we go with the `Symbol.builtin` approach:
-  * If `arg` has a constructor with a `Symbol.builtin` property with a string
-    value, return the value of `Symbol.builtin`.
-* If we go with the `[[Builtin]]` internal slot approach:
-  * If `arg` has a constructor, or any object in that constructor's prototype
-    chain, has `[[Builtin]]` internal slot with a string value, return the value
-    of `[[Builtin]]` 
-* Otherwise return the value of `typeof arg`.
+* If `Type(arg)` is `Object`, then:
+  * Let `C` be `? Get(arg, "constructor")`.
+  * If `C` is not `undefined`, then:
+    * Let `B` be `? C.[[Get]](@@builtin)`
+    * If `Type(B)` is `String`, return `B`
+* Return `typeof arg`.
 
 For example:
 
@@ -256,51 +260,28 @@ Builtin.typeof(1);                              // 'number'
 Builtin.typeof('test');                         // 'string'
 Builtin.typeof(Symbol('foo'));                  // 'symbol'
 Builtin.typeof(function() {});                  // 'function'
-```
 
-The `Builtin.typeof()` method would operate consistently on cross-realm
-objects:
 
-For instance, in Node.js:
-
-```js
-Builtin.typeof(vm.runInNewContext('new Date()')); // 'Date'
-```
-
-Host environments that introduce new host specific global or built-in objects
-may return additional implementation defined values. For instance, a
-hypothetical host environment that offers `URL` as a built-in global may return
-the value `'URL'` in response to
-`Builtin.typeof(new URL('http://example.org'))`.
-
-If the given `arg` is an `Object` with a built-in within its prototype chain,
-then `Builtin.typeof()` must return the name of the built-in. For instance:
-
-```js
 class MyArray extends Uint8Array {}
 const myArray = new MyArray();
-Builtin.typeof(myArray);            // 'Uint8Array'
-```
+Builtin.typeof(myArray);                        // 'Uint8Array'
 
-This should also work across realms:
-
-```js
-class MyArray extends Uint8Array {}
-const myArray = new MyArray();
 vm.runInNewContext('Builtin.typeof(myArray)', { myArray }); // 'Uint8Array'
 ```
 
-The `Builtin.typeof()` method will not throw an exception.
+The `Builtin.typeof()` function will not throw an exception.
 
 ### `Proxy.isProxy(value)`
 
-Returns `true` if `value` is a Proxy exotic object.
+Returns `true` if `value` is a Proxy exotic object, otherwise return `false`.
+
+The `Proxy.isProxy()` function will not throw an exception.
 
 ### Notes
 
-* Using the `Symbol.builtin` approach means that any object can lie about being
-  a built-in by setting the `Symbol.builtin` property to whatever value it
-  wants. That is by design.
+* Using `@@builtin` means that any object can lie about being a built-in by
+  setting the `@@builtin` own property to whatever value it wants. This is by
+  design.
 
 * Why have a separate `Proxy.isProxy()` function? For the simple reason that
   `Proxy` objects do not act like anything else. The use case justifying
@@ -308,80 +289,73 @@ Returns `true` if `value` is a Proxy exotic object.
   to know if the an object of interest is a Proxy or not.
 
 * The `Builtin` property on the `global` object is set initially to the
-  `Builtin` object. This property is `[[Configurable]]: true` and
-  `[[Enumerable]]: true`.
+  `Builtin` object. This property has the attributes:
+  * `[[Configurable]]: true`
+  * `[[Enumerable]]: true`
+  * `[[Writable]]: true`
 
-* Both the `Builtin.is` and `Builtin.typeof` properties are
-  [[Configurable]]: true` and `[[Enumerable]]: true`
-
-* If `Foo` is a built-in, `Builtin.typeof(Foo) === 'object'` and
-  `Builtin.typeof(Foo.prototype) === 'object'` unless the prototype just
-  happens to also be a built-in.
+* The `Builtin.is`, `Builtin.typeof`, and `Proxy.isProxy` properties have
+  the attributes:
+  * `[[Configurable]]: true`
+  * `[[Enumerable]]: true`
+  * `[[Writable]]: true`
 
 * All of the built-in objects would be assigned a default initial value for
-  either the `Symbol.builtin` property or the `[[Builtin]]` internal slot
-  (depending on the approach take) equal to the name of the object.
-    * `Array[Symbol.builtin] = 'Array'`
-    * `ArrayBuffer[Symbol.builtin] = 'ArrayBuffer'`
-    * `AsyncFunction[Symbol.builtin] = 'AsyncFunction'`
-    * `Atomics[Symbol.builtin] = 'Atomics'`
-    * `Boolean[Symbol.builtin] = 'Boolean'`
-    * `DataView[Symbol.builtin] = 'DataView'`
-    * `Date[Symbol.builtin] = 'Date'`
-    * `Error[Symbol.builtin] = 'Error'`
-    * `EvalError[Symbol.builtin] = 'EvalError'`
-    * `Float32Array[Symbol.builtin] = 'Float32Array'`
-    * `Float64Array[Symbol.builtin] = 'Float64Array'`
-    * `Generator[Symbol.builtin] = 'Generator'`
-    * `GeneratorFunction[Symbol.builtin] = 'GeneratorFunction'`
-    * `Int16Array[Symbol.builtin] = 'Int16Array'`
-    * `Int32Array[Symbol.builtin] = 'Int32Array'`
-    * `Int8Array[Symbol.builtin] = 'Int8Array'`
-    * `InternalError[Symbol.builtin] = 'InternalError'`
-    * `Intl[Symbol.builtin] = 'Intl'`
-    * `Intl.Collator[Symbol.builtin] = 'Collator'`
-    * `Intl.DateTimeFormat[Symbol.builtin] = 'DateTimeFormat'`
-    * `Intl.NumberFormat[Symbol.builtin] = 'NumberFormat'`
-    * `JSON[Symbol.builtin] = 'JSON'`
-    * `Map[Symbol.builtin] = 'Map'`
-    * `Math[Symbol.builtin] = 'Math'`
-    * `NaN[Symbol.builtin] = 'NaN'`
-    * `Number[Symbol.builtin] = 'Number'`
-    * `Promise[Symbol.builtin] = 'Promise'`
-    * `RangeError[Symbol.builtin] = 'RangeError'`
-    * `ReferenceError[Symbol.builtin] = 'ReferenceError'`
-    * `Reflect[Symbol.builtin] = 'Reflect'`
-    * `RegExp[Symbol.builtin] = 'RegExp'`
-    * `Set[Symbol.builtin] = 'Set'`
-    * `SharedArrayBuffer[Symbol.builtin] = 'SharedArrayBuffer'`
-    * `String[Symbol.builtin] = 'String'`
-    * `SyntaxError[Symbol.builtin] = 'SyntaxError'`
-    * `TypeError[Symbol.builtin] = 'TypeError'`
-    * `URIError[Symbol.builtin] = 'URIError'`
-    * `Uint16Array[Symbol.builtin] = 'Uint16Array'`
-    * `Uint32Array[Symbol.builtin] = 'Uint32Array'`
-    * `Uint8Array[Symbol.builtin] = 'Uint8Array'`
-    * `Uint8ClampedArray[Symbol.builtin] = 'Uint8ClampedArray'`
-    * `WeakMap[Symbol.builtin] = 'WeakMap'`
-    * `WeatSet[Symbol.builtin] = 'WeatSet'`
-    * `WebAssembly[Symbol.builtin] = 'WebAssembly'`
-    * `WebAssembly.Module[Symbol.builtin] = 'Module'`
-    * `WebAssembly.Instance[Symbol.builtin] = 'Instance'`
-    * `WebAssembly.Memory[Symbol.builtin] = 'Memory'`
-    * `WebAssembly.Table[Symbol.builtin] = 'Table'`
-    * `WebAssembly.CompileError[Symbol.builtin] = 'CompileError'`
-    * `WebAssembly.LinkError[Symbol.builtin] = 'LinkError'`
-    * `WebAssembly.RuntimeError[Symbol.builtin] = 'RuntimeError'`
+  the `[[Builtin]]` internal slot. These become the initial value of the
+  `@@builtin` own property for each object.
+    * `Array[[Builtin]] = 'Array'`
+    * `ArrayBuffer[[Builtin]] = 'ArrayBuffer'`
+    * `AsyncFunction[[Builtin]] = 'AsyncFunction'`
+    * `Atomics[[Builtin]] = 'Atomics'`
+    * `Boolean[[Builtin]] = 'Boolean'`
+    * `DataView[[Builtin]] = 'DataView'`
+    * `Date[[Builtin]] = 'Date'`
+    * `Error[[Builtin]] = 'Error'`
+    * `EvalError[[Builtin]] = 'EvalError'`
+    * `Float32Array[[Builtin]] = 'Float32Array'`
+    * `Float64Array[[Builtin]] = 'Float64Array'`
+    * `Generator[[Builtin]] = 'Generator'`
+    * `GeneratorFunction[[Builtin]] = 'GeneratorFunction'`
+    * `Int16Array[[Builtin]] = 'Int16Array'`
+    * `Int32Array[[Builtin]] = 'Int32Array'`
+    * `Int8Array[[Builtin]] = 'Int8Array'`
+    * `InternalError[[Builtin]] = 'InternalError'`
+    * `Intl[[Builtin]] = 'Intl'`
+    * `Intl.Collator[[Builtin]] = 'Collator'`
+    * `Intl.DateTimeFormat[[Builtin]] = 'DateTimeFormat'`
+    * `Intl.NumberFormat[[Builtin]] = 'NumberFormat'`
+    * `JSON[[Builtin]] = 'JSON'`
+    * `Map[[Builtin]] = 'Map'`
+    * `Math[[Builtin]] = 'Math'`
+    * `NaN[[Builtin]] = 'NaN'`
+    * `Number[[Builtin]] = 'Number'`
+    * `Promise[[Builtin]] = 'Promise'`
+    * `RangeError[[Builtin]] = 'RangeError'`
+    * `ReferenceError[[Builtin]] = 'ReferenceError'`
+    * `Reflect[[Builtin]] = 'Reflect'`
+    * `RegExp[[Builtin]] = 'RegExp'`
+    * `Set[[Builtin]] = 'Set'`
+    * `SharedArrayBuffer[[Builtin]] = 'SharedArrayBuffer'`
+    * `String[[Builtin]] = 'String'`
+    * `SyntaxError[[Builtin]] = 'SyntaxError'`
+    * `TypeError[[Builtin]] = 'TypeError'`
+    * `URIError[[Builtin]] = 'URIError'`
+    * `Uint16Array[[Builtin]] = 'Uint16Array'`
+    * `Uint32Array[[Builtin]] = 'Uint32Array'`
+    * `Uint8Array[[Builtin]] = 'Uint8Array'`
+    * `Uint8ClampedArray[[Builtin]] = 'Uint8ClampedArray'`
+    * `WeakMap[[Builtin]] = 'WeakMap'`
+    * `WeatSet[[Builtin]] = 'WeatSet'`
+    * `WebAssembly[[Builtin]] = 'WebAssembly'`
+    * `WebAssembly.Module[[Builtin]] = 'Module'`
+    * `WebAssembly.Instance[[Builtin]] = 'Instance'`
+    * `WebAssembly.Memory[[Builtin]] = 'Memory'`
+    * `WebAssembly.Table[[Builtin]] = 'Table'`
+    * `WebAssembly.CompileError[[Builtin]] = 'CompileError'`
+    * `WebAssembly.LinkError[[Builtin]] = 'LinkError'`
+    * `WebAssembly.RuntimeError[[Builtin]] = 'RuntimeError'`
 
-## Questions
-
-1. Should:
-    * `Builtin.is(undefined) === false` ?
-    * `Builtin.is(null) === false` ?
-    * `Builtin.is(1) === false` ?  // Basically, should any primitives be
-      detectable as built-ins?
-
-## Example
+## Examples
 
 ```js
 function formatValue(value) {
@@ -394,5 +368,14 @@ function formatValue(value) {
       return formatRegExp(value);
     /** ... **/
   }
+}
+```
+
+```js
+const val = vm.runInNewContext('Date');
+if (Builtin.is(val, Date)) {
+  /** ... **/
+} else if (Builtin.is(val, Math)) {
+  /** ... **/
 }
 ```
