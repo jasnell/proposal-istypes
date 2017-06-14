@@ -67,55 +67,107 @@ What is needed?
 An object is identified as a built-in using:
 
 * A new `[[Builtin]]` internal slot to mark built-ins
-* A new `@@builtin` symbol (`Symbol.builtin`) property whose default behavior
-  is to provide the value of the `[[Builtin]]` internal slot.
+* A new `@@builtin` symbol (`Symbol.builtin`) property whose value is a function
+  whose default behavior is to provide the value of the `[[Builtin]]` internal
+  slot.
 
 #### `[[Builtin]]` internal slot
 
-All built-ins, with the exception of the intrinsic object `%ObjectPrototype%`,
-would have a `[[Builtin]]` internal slot with a string value identifying the
-name of the built-in. For instance, for the `%Math%` intrinsic object, the
-value of `[[Builtin]]` is `'Math'`.
+Intrinsic objects listed in the table below have a `[[Builtin]]` internal slot
+with the given string value. Intrinsic objects not listed in the table do *not*
+have the `[[Builtin]]` internal slot.
 
-For `%TypedArray%` intrinsic objects, the value of `[[Builtin]]` is equal to
-the value of `[[TypedArrayName]]`. For instance, for a `%TypedArray%` with
-`[[TypedArrayName]]` `'Uint8Array'`, the value of `[[Builtin]]` is
-`'Uint8Array'`.
+| Intrinsic Name        | Builtin Name          |
+| --------------------- | --------------------- |
+| `%Array%`             | `'Array'`             |
+| `%ArrayBuffer%`       | `'ArrayBuffer'`       |
+| `%AsyncFunction%`     | `'AsyncFunction'`     |
+| `%Atomics%`           | `'Atomics'`           |
+| `%Boolean%`           | `'Boolean'`           |
+| `%DataView%`          | `'DataView'`          |
+| `%Date%`              | `'Date'`              |
+| `%Error%`             | `'Error'`             |
+| `%EvalError%`         | `'EvalError'`         |
+| `%Float32Array%`      | `'Float32Array'`      |
+| `%Float64Array%`      | `'Float64Array'`      |
+| `%Function%`          | `'function'`          |
+| `%GeneratorFunction%` | `'GeneratorFunction'` |
+| `%Int8Array%`         | `'Int8Array'`         |
+| `%Int16Array%`        | `'Int16Array'`        |
+| `%Int32Array%`        | `'Int32Array'`        |
+| `%JSON%`              | `'JSON'`              |
+| `%Map%`               | `'Map'`               |
+| `%Math%`              | `'Math'`              |
+| `%Number%`            | `'Number'`            |
+| `%Object%`            | `'object'`            |
+| `%Promise%`           | `'Promise'`           |
+| `%Proxy%`             | `'Proxy'`             |
+| `%RangeError%`        | `'RangeError'`        |
+| `%ReferenceError%`    | `'ReferenceError'`    |
+| `%Reflect%`           | `'Reflect'`           |
+| `%RegExp%`            | `'RegExp'`            |
+| `%Set%`               | `'Set'`               |
+| `%SharedArrayBuffer%` | `'SharedArrayBuffer'` |
+| `%String%`            | `'String'`            |
+| `%Symbol%`            | `'symbol'`            |
+| `%SyntaxError%`       | `'SyntaxError'`       |
+| `%TypeError%`         | `'TypeError'`         |
+| `%Uint8Array%`        | `'Uint8Array'`        |
+| `%Uint8ClampedArray%` | `'Uint8ClampedArray'` |
+| `%Uint16Array%`       | `'Uint16Array'`       |
+| `%Uint32Array%`       | `'Uint32Array'`       |
+| `%URIError%`          | `'URIError'`          |
+| `%WeakMap%`           | `'WeakMap'`           |
+| `%WeakSet%`           | `'WeakSet'`           |
+
+*Note*: Currently, intrinsic prototype objects such as `%DatePrototype%`
+intentionally do *not* have a `[[Builtin]]` internal slot. The effect of this
+is such that `Builtin.typeof(new Date())` would return `'Date'`,
+`Builtin.typeof(Object.getPrototypeOf(new Date()))` would return `'object'`,
+despite `%DatePrototype%` being an intrinsic object. The justification for
+this is that it is not yet clear if intrinsic prototype objects *need* to be
+identifiable as built-ins.
 
 #### `Symbol.builtin`
 
-The initial value of the `@@builtin` own property is the value of the
-`[[Builtin]]` internal slot, or `undefined` if the object does not have
-a `[[Builtin]]` internal slot.
+The initial value of the `@@builtin` own property for all intrinsic objects
+having a `[[Builtin]]` internal slot is the same function that returns the
+value of the `[[Builtin]]` internal slot. Intrinsic objects that do not have
+the `[[Builtin]]` internal slot do not have an initial value for the `@@builtin`
+own property.
+
+```js
+const builtIn1 = Date[Symbol.builtin];
+const builtIn2 = Uint8Array[Symbol.builtin];
+const same = builtIn1 === builtIn2;         // true
+```
 
 An object is detectable as a built-in if it has the `@@builtin` own property.
 
-An object is detectable as an instance of a built-in if its constructor has a
+An object is detectable as an *instance* of a built-in if its constructor has a
 `@@builtin` property as either an own or inherited property.
 
 ```js
-class Foo {}
+class Foo {
+  static [Symbol.builtin]() {
+    return 'Foo';
+  }
+}
 class Bar extends Foo {}
 
-Foo[Symbol.builtin] = 'Foo';
-
-Builtin.is(Foo);               // true, Symbol.builtin is an own property
 Builtin.typeof(new Foo());     // 'Foo'
 
-Builtin.is(Bar);               // false, Symbol.builtin is inherited
 Builtin.typeof(new Bar());     // 'Foo'
 ```
 
-Setting the `@@builtin` property to a non-string value makes the object,
+Setting the `@@builtin` property to a non-function value makes the object,
 or instances of the object, no longer detectable as built-ins:
 
 ```js
-Builtin.is(Uint8Array);                 // true
 Builtin.typeof(new Uint8Array(0));      // 'Uint8Array'
 
 Uint8Array[Symbol.builtin] = undefined;
 
-Builtin.is(Uint8Array);                 // false
 Builtin.typeof(new Uint8Array(0));      // 'object'
 ```
 
@@ -125,6 +177,28 @@ The `@@builtin` property has the attributes:
 * `[[Enumerable]]: false`
 * `[[Writable]]: true`
 
+### Abstract Operations
+
+#### `GetBuiltinValue`
+
+The abstract operation `GetBuiltinValue` with argument `object` performs the
+following steps:
+
+* Let `fn` be `? GetMethod(object, @@builtin)`.
+* If `fn` is `undefined`, return `undefined`.
+* Let `value` be `? Call(fn, object)`.
+* If `value` is `undefined`, return `undefined`.
+* Return `? ToString(value)`.
+
+#### `GetOwnBuiltinValue`
+
+The abstract operation `GetOwnBuiltinValue` with argument `object` performs the
+following steps:
+
+* Let `hasProperty` be `? HasOwnProperty(object, @@builtin)`.
+* If `hasProperty` is `false`, return `undefined`.
+* Return `? GetBuiltinValue(object)`.
+ 
 ### `Builtin`
 
 The `Builtin` object is the `%Builtin%` intrinsic object and the initial
@@ -140,46 +214,22 @@ object as a constructor with the `new` operator. The `Builtin` object also
 does not have a `[[Call]]` internal method; it is not possible to invoke the
 `Builtin` object as a function.
 
-#### `Builtin.is(value1[, value2])`
+#### `Builtin.is(value1, value2)`
 
 When called with arguments `value1` and `value2`:
 
 * If `Type(value1)` is not `Object` return `false`.
-* Let `B` be `? value1.[[GetOwnProperty]](@@builtin)`.
-* If `B` is `undefined`, return `false`.
-* Let `V1` be `? GET(value1, @@builtin)`.
-* If `Type(V1)` is not `String`, return `false`.
-* If `value2` is `undefined`, return `true`.
+* Let `V1` be `? GetOwnBuiltinValue(value1)`.
+* If `V1` is `undefined`, return `false`.
+* If `value2` is `undefined`, return `false`.
 * If `Type(value2)` is not `Object`, return `false`.
-* Let `B` be `? value2.[[GetOwnProperty]](@@builtin)`.
-* If `B` is `undefined`, return `false`.
-* Let `V2` be `? GET(value2, @@builtin)`.
-* If `Type(V2)` is not `String`, return `false`.
+* Let `V2` be `? GetOwnBuiltinValue(value2)`.
 * Let `same` be the result of performing Strict Equality Comparison `V1 === V2`.
 * Return `same`
 
-When called with a single argument, the `Builtin.is()` function returns `true`
-if the given value has the `@@builtin` own property:
-
-```js
-Builtin.is(Date);                               // true
-Builtin.is(vm.runInNewContext('Date'))          // true
-
-const m = {};
-Object.setPrototypeOf(m, Date);
-Builtin.is(m);                                  // false
-
-const n = new Date();
-Builtin.is(n);                                  // false
-
-Date = {};
-Builtin.is(Date);                               // false
-```
-
-When called with two arguments, the `Builtin.is()` function returns `true` if
-both given values have the `@@builtin` own property and the value of both
-`@@builtin` own properties are strictly equal to one another. Otherwise,
-return `false`.
+The `Builtin.is()` function returns `true` if both of the given values have a
+`@@builtin` own property function that each returns values that, after coercion
+to a string, are strictly equal to one another. Otherwise, return `false`.
 
 ```js
 Builtin.is(Date, vm.runInNewContext('Date'));     // true
@@ -195,10 +245,13 @@ Note that user code may modify the `@@builtin` own property on any object:
 
 ```js
 Date[Symbol.builtin] = undefined;
-Builtin.is(Date);                                  // false
+Builtin.is(Date, vm.runInNewContext('Date'));     // false
 ```
 
-The `Builtin.is()` function will not throw an exception.
+By default, the `Builtin.is()` function will not throw an exception. It is
+possible for `Builtin.is()` to throw if a user-provided `@@builtin` function
+throws or returns a value that cannot be coerced to a string (e.g. `Symbol`
+values).
 
 #### `Builtin.typeof(arg)`
 
@@ -207,8 +260,8 @@ When the `typeof()` function is called with argument `arg`:
 * If `Type(arg)` is `Object`, then:
   * Let `C` be `? Get(arg, "constructor")`.
   * If `C` is not `undefined`, then:
-    * Let `B` be `? C.[[Get]](@@builtin)`
-    * If `Type(B)` is `String`, return `B`
+    * Let `V` be `? GetBuiltinValue(C)`.
+    * If `V` is not `undefined`, return `V`.
 * Return `typeof arg`.
 
 For example:
@@ -224,7 +277,7 @@ Builtin.typeof(new Error());                    // 'Error'
 Builtin.typeof(new EvalError());                // 'EvalError'
 Builtin.typeof(new Float32Array());             // 'Float32Array'
 Builtin.typeof(new Float64Array());             // 'Float64Array'
-Builtin.typeof((function*() {})());             // 'Generator'
+Builtin.typeof(function() {});                  // 'function'
 Builtin.typeof(function*() {});                 // 'GeneratorFunction'
 Builtin.typeof(new Int16Array());               // 'Int16Array'
 Builtin.typeof(new Int32Array());               // 'Int32Array'
@@ -235,6 +288,7 @@ Builtin.typeof(new Intl.DateTimeFormat());      // 'DateTimeFormat'
 Builtin.typeof(new Intl.NumberFormat());        // 'NumberFormat'
 Builtin.typeof(new Map());                      // 'Map'
 Builtin.typeof(new Number());                   // 'Number'
+Builtin.typeof(new Object());                   // 'object'
 Builtin.typeof(new Promise(() => {}));          // 'Promise'
 Builtin.typeof(new RangeError());               // 'RangeError'
 Builtin.typeof(new ReferenceError());           // 'ReferenceError'
@@ -275,7 +329,13 @@ Builtin.typeof(myArray);                        // 'Uint8Array'
 vm.runInNewContext('Builtin.typeof(myArray)', { myArray }); // 'Uint8Array'
 ```
 
-The `Builtin.typeof()` function will not throw an exception.
+By default, the `Builtin.typeof()` function will not throw an exception. It is
+possible for `Builtin.typeof()` to throw if a user-provided `@@builtin` function
+throws or returns a value that cannot be coerced to a string (e.g. `Symbol`
+values).
+
+*Note*: Because of the nature of `Proxy` instances, it is not possible for
+`Builtin.typeof(proxyObj)` to ever return `'Proxy'`.
 
 ### `Proxy.isProxy(value)`
 
@@ -283,7 +343,16 @@ Returns `true` if `value` is a Proxy exotic object, otherwise return `false`.
 
 The `Proxy.isProxy()` function will not throw an exception.
 
+*Note*: Due to the security issues around `Proxy`, host environments should be
+allowed to provide an option for forcing `Proxy.isProxy(value)` to always
+return `false`. For instance, Node.js could hypothetically provide a
+command-line argument like `--disable-isproxy`.
+
 ### Notes
+
+* Adding a new `%Builtin%` intrinsic object can be avoided by adding functions
+  to an existing intrinisic, for instance `Object.isBuiltin()` or
+  `Object.typeof()`.
 
 * Using `@@builtin` means that any object can lie about being a built-in by
   setting the `@@builtin` own property to whatever value it wants. This is by
@@ -305,54 +374,6 @@ The `Proxy.isProxy()` function will not throw an exception.
   * `[[Configurable]]: true`
   * `[[Enumerable]]: true`
   * `[[Writable]]: true`
-
-* All of the built-in objects would be assigned a default initial value for
-  the `[[Builtin]]` internal slot. These become the initial value of the
-  `@@builtin` own property for each object.
-    * `Array.[[Builtin]] = 'Array'`
-    * `ArrayBuffer.[[Builtin]] = 'ArrayBuffer'`
-    * `AsyncFunction.[[Builtin]] = 'AsyncFunction'`
-    * `Atomics.[[Builtin]] = 'Atomics'`
-    * `Boolean.[[Builtin]] = 'Boolean'`
-    * `Builtint.[[Builtin]] = 'Builtin'`
-    * `DataView.[[Builtin]] = 'DataView'`
-    * `Date.[[Builtin]] = 'Date'`
-    * `Error.[[Builtin]] = 'Error'`
-    * `EvalError.[[Builtin]] = 'EvalError'`
-    * `Float32Array.[[Builtin]] = 'Float32Array'`
-    * `Float64Array.[[Builtin]] = 'Float64Array'`
-    * `Generator.[[Builtin]] = 'Generator'`
-    * `GeneratorFunction.[[Builtin]] = 'GeneratorFunction'`
-    * `Int16Array.[[Builtin]] = 'Int16Array'`
-    * `Int32Array.[[Builtin]] = 'Int32Array'`
-    * `Int8Array.[[Builtin]] = 'Int8Array'`
-    * `InternalError.[[Builtin]] = 'InternalError'`
-    * `Intl.[[Builtin]] = 'Intl'`
-      * `Intl.Collator.[[Builtin]] = 'Collator'`
-      * `Intl.DateTimeFormat.[[Builtin]] = 'DateTimeFormat'`
-      * `Intl.NumberFormat.[[Builtin]] = 'NumberFormat'`
-    * `JSON.[[Builtin]] = 'JSON'`
-    * `Map.[[Builtin]] = 'Map'`
-    * `Math.[[Builtin]] = 'Math'`
-    * `NaN.[[Builtin]] = 'NaN'`
-    * `Number.[[Builtin]] = 'Number'`
-    * `Promise.[[Builtin]] = 'Promise'`
-    * `RangeError.[[Builtin]] = 'RangeError'`
-    * `ReferenceError.[[Builtin]] = 'ReferenceError'`
-    * `Reflect.[[Builtin]] = 'Reflect'`
-    * `RegExp.[[Builtin]] = 'RegExp'`
-    * `Set.[[Builtin]] = 'Set'`
-    * `SharedArrayBuffer.[[Builtin]] = 'SharedArrayBuffer'`
-    * `String.[[Builtin]] = 'String'`
-    * `SyntaxError.[[Builtin]] = 'SyntaxError'`
-    * `TypeError.[[Builtin]] = 'TypeError'`
-    * `URIError.[[Builtin]] = 'URIError'`
-    * `Uint16Array.[[Builtin]] = 'Uint16Array'`
-    * `Uint32Array.[[Builtin]] = 'Uint32Array'`
-    * `Uint8Array.[[Builtin]] = 'Uint8Array'`
-    * `Uint8ClampedArray.[[Builtin]] = 'Uint8ClampedArray'`
-    * `WeakMap.[[Builtin]] = 'WeakMap'`
-    * `WeatSet.[[Builtin]] = 'WeatSet'`
 
 ## Examples
 
@@ -377,4 +398,46 @@ if (Builtin.is(val, Date)) {
 } else if (Builtin.is(val, Math)) {
   /** ... **/
 }
+```
+
+Because the value of `@@builtin` is a function, the original implementation can
+be captured, cached, and restored later:
+
+```js
+const origDateBuiltin = Date[Symbol.builtin];
+Date[Symbol.builtin] = undefined;
+
+Builtin.is(Date, vm.runInNewContext('Date'));  // false
+Builtin.typeof(Date);                          // 'object'
+
+origDateBuiltin.call(Date);                    // 'Date'
+
+Date[Symbol.builtin] = origDateBuiltin;
+
+Builtin.is(Date, vm.runInNewContext('Date'));  // true
+Builtin.typeof(Date);                          // 'Date'
+```
+
+*Note*: The behavior of the initial `@@builtin` function is to return the value
+of the `this` objects `[[Builtin]]` internal slot if one exists. Accordingly,
+it is possible to grab a reference to the function once and use it on multiple
+objects:
+
+```js
+const origBuiltin = Date[Symbol.builtin];
+Uint8Array[Symbol.builtin] = origBuiltin;
+
+class Foo {}
+Foo[Symbol.builtin] = origBuiltin;
+
+Date[Symbol.builtin]();                                  // 'Date'
+Uint8Array[Symbol.builtin]();                            // 'Uint8Array'
+Foo[Symbol.builtin]();                                   // undefined
+
+Builtin.is(Date, vm.runInNewContext('Date'));            // true
+Builtin.is(Uint8Array, vm.runInNewContext('Uin8Array')); // true
+
+Builtin.typeof(new Date());                              // 'Date'
+Builtin.typeof(new Uint8Array());                        // 'Uint8Array'
+Builtin.typeof(new Foo());                               // 'object'
 ```
