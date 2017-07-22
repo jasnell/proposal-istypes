@@ -356,7 +356,10 @@ command-line argument like `--disable-isproxy`.
 
 * Using `@@builtin` means that any object can lie about being a built-in by
   setting the `@@builtin` own property to whatever value it wants. This is by
-  design.
+  design. Polyfills/shims and secure-realm code, for example, must be able to
+  create builtins, remove them, or replace builtins that are noncompliant - as
+  such, a shim (that runs before other code) must be able to create its own
+  builtin replacement and truly masquerade as if it were the original builtin.
 
 * Why have a separate `Proxy.isProxy()` function? For the simple reason that
   `Proxy` objects do not act like anything else. The use case justifying
