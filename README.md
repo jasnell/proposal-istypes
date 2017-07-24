@@ -128,6 +128,19 @@ despite `%DatePrototype%` being an intrinsic object. The justification for
 this is that it is not yet clear if intrinsic prototype objects *need* to be
 identifiable as built-ins.
 
+In addition, all built-in non-constructor functions and methods have a
+`[[Builtin]]` internal slot equal to the name of the function. These are used
+to allow using `Builtin.is()` to determine if two function/method instances
+represent the same intrinsic function or method.
+
+For instance,
+
+```js
+Builtin.is(eval, vm.runInNewContext('eval'));                // true
+Builtin.is(Object.prototype.toString,
+           vm.runInNewContext('Object.prototype.toString')); // true
+```
+
 #### `Symbol.builtin`
 
 The initial value of the `@@builtin` own property for all intrinsic objects
