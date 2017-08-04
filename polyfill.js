@@ -163,7 +163,7 @@ Object.defineProperties(Builtin, {
     writable: true,
     value: _is
   },
-  'typeof': {
+  'typeOf': {
     enumerable: false,
     configurable: true,
     writable: true,

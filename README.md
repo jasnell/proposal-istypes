@@ -1,4 +1,4 @@
-# Builtin.is and Builtin.typeof
+# Builtin.is and Builtin.typeOf
 
 ## Motivation
 
@@ -122,8 +122,8 @@ have the `[[Builtin]]` internal slot.
 
 *Note*: Currently, intrinsic prototype objects such as `%DatePrototype%`
 intentionally do *not* have a `[[Builtin]]` internal slot. The effect of this
-is such that `Builtin.typeof(new Date())` would return `'Date'`,
-`Builtin.typeof(Object.getPrototypeOf(new Date()))` would return `'object'`,
+is such that `Builtin.typeOf(new Date())` would return `'Date'`,
+`Builtin.typeOf(Object.getPrototypeOf(new Date()))` would return `'object'`,
 despite `%DatePrototype%` being an intrinsic object. The justification for
 this is that it is not yet clear if intrinsic prototype objects *need* to be
 identifiable as built-ins.
@@ -168,20 +168,20 @@ class Foo {
 }
 class Bar extends Foo {}
 
-Builtin.typeof(new Foo());     // 'Foo'
+Builtin.typeOf(new Foo());     // 'Foo'
 
-Builtin.typeof(new Bar());     // 'Foo'
+Builtin.typeOf(new Bar());     // 'Foo'
 ```
 
 Setting the `@@builtin` property to a non-function value makes the object,
 or instances of the object, no longer detectable as built-ins:
 
 ```js
-Builtin.typeof(new Uint8Array(0));      // 'Uint8Array'
+Builtin.typeOf(new Uint8Array(0));      // 'Uint8Array'
 
 Uint8Array[Symbol.builtin] = undefined;
 
-Builtin.typeof(new Uint8Array(0));      // 'object'
+Builtin.typeOf(new Uint8Array(0));      // 'object'
 ```
 
 The `@@builtin` property has the attributes:
@@ -266,9 +266,9 @@ possible for `Builtin.is()` to throw if a user-provided `@@builtin` function
 throws or returns a value that cannot be coerced to a string (e.g. `Symbol`
 values).
 
-#### `Builtin.typeof(arg)`
+#### `Builtin.typeOf(arg)`
 
-When the `typeof()` function is called with argument `arg`:
+When the `typeOf()` function is called with argument `arg`:
 
 * If `Type(arg)` is `Object`, then:
   * Let `C` be `? Get(arg, "constructor")`.
@@ -280,75 +280,75 @@ When the `typeof()` function is called with argument `arg`:
 For example:
 
 ```js
-Builtin.typeof([]);                             // 'Array'
-Builtin.typeof(new ArrayBuffer());              // 'ArrayBuffer'
-Builtin.typeof(async function foo() {});        // 'AsyncFunction'
-Builtin.typeof(new Boolean());                  // 'Boolean'
-Builtin.typeof(new DataView(buffer));           // 'DataView'
-Builtin.typeof(new Date());                     // 'Date'
-Builtin.typeof(new Error());                    // 'Error'
-Builtin.typeof(new EvalError());                // 'EvalError'
-Builtin.typeof(new Float32Array());             // 'Float32Array'
-Builtin.typeof(new Float64Array());             // 'Float64Array'
-Builtin.typeof(function() {});                  // 'function'
-Builtin.typeof(function*() {});                 // 'GeneratorFunction'
-Builtin.typeof(new Int16Array());               // 'Int16Array'
-Builtin.typeof(new Int32Array());               // 'Int32Array'
-Builtin.typeof(new Int8Array());                // 'Int8Array'
-Builtin.typeof(new InternalError());            // 'InternalError'
-Builtin.typeof(new Intl.Collator());            // 'Collator'
-Builtin.typeof(new Intl.DateTimeFormat());      // 'DateTimeFormat'
-Builtin.typeof(new Intl.NumberFormat());        // 'NumberFormat'
-Builtin.typeof(new Map());                      // 'Map'
-Builtin.typeof(new Number());                   // 'Number'
-Builtin.typeof(new Object());                   // 'object'
-Builtin.typeof(new Promise(() => {}));          // 'Promise'
-Builtin.typeof(new RangeError());               // 'RangeError'
-Builtin.typeof(new ReferenceError());           // 'ReferenceError'
-Builtin.typeof(new RegExp(''));                 // 'RegExp'
-Builtin.typeof(new Set());                      // 'Set'
-Builtin.typeof(new SharedArrayBuffer());        // 'SharedArrayBuffer'
-Builtin.typeof(new String());                   // 'String'
-Builtin.typeof(new SyntaxError());              // 'SyntaxError'
-Builtin.typeof(new TypeError());                // 'TypeError'
-Builtin.typeof(new URIError());                 // 'URIError'
-Builtin.typeof(new Uint16Array());              // 'Uint16Array'
-Builtin.typeof(new Uint32Array());              // 'Uint32Array'
-Builtin.typeof(new Uint8Array());               // 'Uint8Array'
-Builtin.typeof(new Uint8ClampedArray());        // 'Uint8ClampedArray'
-Builtin.typeof(new WeakMap());                  // 'WeakMap'
-Builtin.typeof(new WeakSet());                  // 'WeatSet'
-Builtin.typeof(new WebAssembly.Module());       // 'Module'
-Builtin.typeof(new WebAssembly.Instance());     // 'Instance'
-Builtin.typeof(new WebAssembly.Memory());       // 'Memory'
-Builtin.typeof(new WebAssembly.Table());        // 'Table'
-Builtin.typeof(new WebAssembly.CompileError()); // 'CompileError'
-Builtin.typeof(new WebAssembly.LinkError());    // 'LinkError'
-Builtin.typeof(new WebAssembly.RuntimeError()); // 'RuntimeError'
-Builtin.typeof(null);                           // 'null'
-Builtin.typeof(undefined);                      // 'undefined'
-Builtin.typeof({});                             // 'object'
-Builtin.typeof(true);                           // 'boolean'
-Builtin.typeof(1);                              // 'number'
-Builtin.typeof('test');                         // 'string'
-Builtin.typeof(Symbol('foo'));                  // 'symbol'
-Builtin.typeof(function() {});                  // 'function'
+Builtin.typeOf([]);                             // 'Array'
+Builtin.typeOf(new ArrayBuffer());              // 'ArrayBuffer'
+Builtin.typeOf(async function foo() {});        // 'AsyncFunction'
+Builtin.typeOf(new Boolean());                  // 'Boolean'
+Builtin.typeOf(new DataView(buffer));           // 'DataView'
+Builtin.typeOf(new Date());                     // 'Date'
+Builtin.typeOf(new Error());                    // 'Error'
+Builtin.typeOf(new EvalError());                // 'EvalError'
+Builtin.typeOf(new Float32Array());             // 'Float32Array'
+Builtin.typeOf(new Float64Array());             // 'Float64Array'
+Builtin.typeOf(function() {});                  // 'function'
+Builtin.typeOf(function*() {});                 // 'GeneratorFunction'
+Builtin.typeOf(new Int16Array());               // 'Int16Array'
+Builtin.typeOf(new Int32Array());               // 'Int32Array'
+Builtin.typeOf(new Int8Array());                // 'Int8Array'
+Builtin.typeOf(new InternalError());            // 'InternalError'
+Builtin.typeOf(new Intl.Collator());            // 'Collator'
+Builtin.typeOf(new Intl.DateTimeFormat());      // 'DateTimeFormat'
+Builtin.typeOf(new Intl.NumberFormat());        // 'NumberFormat'
+Builtin.typeOf(new Map());                      // 'Map'
+Builtin.typeOf(new Number());                   // 'Number'
+Builtin.typeOf(new Object());                   // 'object'
+Builtin.typeOf(new Promise(() => {}));          // 'Promise'
+Builtin.typeOf(new RangeError());               // 'RangeError'
+Builtin.typeOf(new ReferenceError());           // 'ReferenceError'
+Builtin.typeOf(new RegExp(''));                 // 'RegExp'
+Builtin.typeOf(new Set());                      // 'Set'
+Builtin.typeOf(new SharedArrayBuffer());        // 'SharedArrayBuffer'
+Builtin.typeOf(new String());                   // 'String'
+Builtin.typeOf(new SyntaxError());              // 'SyntaxError'
+Builtin.typeOf(new TypeError());                // 'TypeError'
+Builtin.typeOf(new URIError());                 // 'URIError'
+Builtin.typeOf(new Uint16Array());              // 'Uint16Array'
+Builtin.typeOf(new Uint32Array());              // 'Uint32Array'
+Builtin.typeOf(new Uint8Array());               // 'Uint8Array'
+Builtin.typeOf(new Uint8ClampedArray());        // 'Uint8ClampedArray'
+Builtin.typeOf(new WeakMap());                  // 'WeakMap'
+Builtin.typeOf(new WeakSet());                  // 'WeatSet'
+Builtin.typeOf(new WebAssembly.Module());       // 'Module'
+Builtin.typeOf(new WebAssembly.Instance());     // 'Instance'
+Builtin.typeOf(new WebAssembly.Memory());       // 'Memory'
+Builtin.typeOf(new WebAssembly.Table());        // 'Table'
+Builtin.typeOf(new WebAssembly.CompileError()); // 'CompileError'
+Builtin.typeOf(new WebAssembly.LinkError());    // 'LinkError'
+Builtin.typeOf(new WebAssembly.RuntimeError()); // 'RuntimeError'
+Builtin.typeOf(null);                           // 'null'
+Builtin.typeOf(undefined);                      // 'undefined'
+Builtin.typeOf({});                             // 'object'
+Builtin.typeOf(true);                           // 'boolean'
+Builtin.typeOf(1);                              // 'number'
+Builtin.typeOf('test');                         // 'string'
+Builtin.typeOf(Symbol('foo'));                  // 'symbol'
+Builtin.typeOf(function() {});                  // 'function'
 
 
 class MyArray extends Uint8Array {}
 const myArray = new MyArray();
-Builtin.typeof(myArray);                        // 'Uint8Array'
+Builtin.typeOf(myArray);                        // 'Uint8Array'
 
-vm.runInNewContext('Builtin.typeof(myArray)', { myArray }); // 'Uint8Array'
+vm.runInNewContext('Builtin.typeOf(myArray)', { myArray }); // 'Uint8Array'
 ```
 
-By default, the `Builtin.typeof()` function will not throw an exception. It is
-possible for `Builtin.typeof()` to throw if a user-provided `@@builtin` function
+By default, the `Builtin.typeOf()` function will not throw an exception. It is
+possible for `Builtin.typeOf()` to throw if a user-provided `@@builtin` function
 throws or returns a value that cannot be coerced to a string (e.g. `Symbol`
 values).
 
 *Note*: Because of the nature of `Proxy` instances, it is not possible for
-`Builtin.typeof(proxyObj)` to ever return `'Proxy'`.
+`Builtin.typeOf(proxyObj)` to ever return `'Proxy'`.
 
 ### `Proxy.isProxy(value)`
 
@@ -365,7 +365,7 @@ command-line argument like `--disable-isproxy`.
 
 * Adding a new `%Builtin%` intrinsic object can be avoided by adding functions
   to an existing intrinisic, for instance `Object.isBuiltin()` or
-  `Object.typeof()`.
+  `Object.typeOf()`.
 
 * Using `@@builtin` means that any object can lie about being a built-in by
   setting the `@@builtin` own property to whatever value it wants. This is by
@@ -385,7 +385,7 @@ command-line argument like `--disable-isproxy`.
   * `[[Enumerable]]: true`
   * `[[Writable]]: true`
 
-* The `Builtin.is`, `Builtin.typeof`, and `Proxy.isProxy` properties have
+* The `Builtin.is`, `Builtin.typeOf`, and `Proxy.isProxy` properties have
   the attributes:
   * `[[Configurable]]: true`
   * `[[Enumerable]]: true`
@@ -395,7 +395,7 @@ command-line argument like `--disable-isproxy`.
 
 ```js
 function formatValue(value) {
-  switch (Builtin.typeof(value)) {
+  switch (Builtin.typeOf(value)) {
     case 'Date':
       return formatDate(value);
     case 'Array':
@@ -424,14 +424,14 @@ const origDateBuiltin = Date[Symbol.builtin];
 Date[Symbol.builtin] = undefined;
 
 Builtin.is(Date, vm.runInNewContext('Date'));  // false
-Builtin.typeof(Date);                          // 'object'
+Builtin.typeOf(Date);                          // 'object'
 
 origDateBuiltin.call(Date);                    // 'Date'
 
 Date[Symbol.builtin] = origDateBuiltin;
 
 Builtin.is(Date, vm.runInNewContext('Date'));  // true
-Builtin.typeof(Date);                          // 'Date'
+Builtin.typeOf(Date);                          // 'Date'
 ```
 
 *Note*: The behavior of the initial `@@builtin` function is to return the value
@@ -453,7 +453,7 @@ Foo[Symbol.builtin]();                                   // undefined
 Builtin.is(Date, vm.runInNewContext('Date'));            // true
 Builtin.is(Uint8Array, vm.runInNewContext('Uin8Array')); // true
 
-Builtin.typeof(new Date());                              // 'Date'
-Builtin.typeof(new Uint8Array());                        // 'Uint8Array'
-Builtin.typeof(new Foo());                               // 'object'
+Builtin.typeOf(new Date());                              // 'Date'
+Builtin.typeOf(new Uint8Array());                        // 'Uint8Array'
+Builtin.typeOf(new Foo());                               // 'object'
 ```
