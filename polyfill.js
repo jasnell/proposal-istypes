@@ -133,7 +133,7 @@ function _is(value1, value2) {
     return false;
   if (value2 === undefined)
     return false;
-  if (typeof value2 !== 'object' && typeof value1 !== 'function')
+  if (typeof value2 !== 'object' && typeof value2 !== 'function')
     return false;
   const v2 = GetOwnBuiltinValue(value2);
   return v1 === v2;
